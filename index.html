@@ -392,6 +392,8 @@ html.locked, html.locked body { overflow: hidden; }
 .tip-btn { flex: none; height: 32px; padding: 0 13px; background: #fff; color: #182437; font-size: 13.5px; font-weight: 700; }
 .tip-x { flex: none; width: 30px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--fg2); }
 .tip-x svg { width: 12px; height: 12px; }
+/* "A new version of Gridpoint is ready" */
+.upd-bar { position: fixed; z-index: 80; left: 50%; transform: translateX(-50%); bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px)); width: min(440px, calc(100% - 32px)); box-shadow: 0 8px 30px rgba(0,0,0,.35); }
 .about-install { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 14px; padding: 10px 12px; text-align: left; background: rgba(255,255,255,0.12); color: var(--fg); font-size: 13.5px; font-weight: 500; line-height: 1.3; }
 .about-install:hover { background: rgba(255,255,255,0.18); }
 .about-install .glyph { flex: none; }
@@ -481,7 +483,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-25 22:52 UTC';
+const APP_BUILD = '2026-10-25 23:05 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -3094,6 +3096,33 @@ render();
 loadAll();
 routeGuide();
 langReady.then(changed => { if (changed) rerenderAll(); });
+
+/* A newer Gridpoint was just saved on the device (the service worker says so after each visit). Switch to it
+   right away if the visitor hasn't started using the page yet, otherwise offer it, so an update shows up the
+   first time the app is opened after it, not the second. */
+let touched = false;
+for (const t of ['pointerdown', 'keydown']) addEventListener(t, () => { touched = true; }, { capture: true, passive: true });
+function appUpdated(build) {
+  if (!build || build === APP_BUILD || document.querySelector('.upd-bar')) return;
+  let done = null;
+  try { done = sessionStorage.getItem('gp:reloadedFor'); } catch (e) {}
+  if (!touched && performance.now() < 10000 && done !== build) {
+    try { sessionStorage.setItem('gp:reloadedFor', build); } catch (e) {}
+    location.reload();
+    return;
+  }
+  const bar = document.createElement('div');
+  bar.className = 'tip upd-bar';
+  bar.setAttribute('role', 'status');
+  bar.innerHTML = `<div class="tip-text">${esc($t('A new version of Gridpoint is ready.'))}</div><button class="tip-btn" data-upd-go>${esc($t('Refresh'))}</button><button class="tip-x" data-upd-x aria-label="${esc($t('Close'))}">${ui('close')}</button>`;
+  bar.querySelector('[data-upd-go]').addEventListener('click', () => location.reload());
+  bar.querySelector('[data-upd-x]').addEventListener('click', () => bar.remove());
+  document.body.appendChild(bar);
+}
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.addEventListener('message', e => { const d = e.data; if (d && d.type === 'gp-updated') appUpdated(d.build); });
+  navigator.serviceWorker.startMessages();
+}
 
 /* When served from a web address, save the app on the device (service worker) so it opens
    with no connection, and offer the manifest so it can be added to a Home Screen or Dock.
