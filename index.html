@@ -155,7 +155,8 @@ a { color: inherit; }
 .hr .ic .wi { width: 30px; height: 30px; }
 .hr .p { font-size: 11.5px; font-weight: 700; color: var(--rain); line-height: 1; margin-top: 1px; }
 .hr .v { font-size: 19px; font-weight: 500; }
-.hr.sun .v { font-size: 13px; font-weight: 500; padding-top: 3px; max-width: 100%; text-align: center; line-height: 1.15; overflow-wrap: anywhere; hyphens: auto; }
+/* the sunrise/sunset word may run a little past its hour's column (the neighbors' numbers are narrow), rather than break mid-word */
+.hr.sun .v { font-size: 13px; font-weight: 500; padding-top: 3px; width: max-content; max-width: 76px; text-align: center; line-height: 1.15; }
 .hr.nbm .t { color: var(--fg2); }
 
 /* daily */
@@ -480,7 +481,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-25 22:12 UTC';
+const APP_BUILD = '2026-10-25 22:52 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };

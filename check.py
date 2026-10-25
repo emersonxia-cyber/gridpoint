@@ -1128,7 +1128,9 @@ async def check_languages(browser, base, results, pw):
         const cs = getComputedStyle(el);
         if (cs.overflowX === 'visible' && cs.display !== 'inline' && el.scrollWidth > el.clientWidth + 2) spill.push((el.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 30));
       }
-      const sun = [...document.querySelectorAll('.hr.sun .v')].filter(v => v.scrollWidth > v.clientWidth + 1).map(v => v.textContent);
+      /* the sunrise/sunset word under its hour: at most a few px into the next hours' columns, at most two lines */
+      const sun = [...document.querySelectorAll('.hr.sun .v')].filter(v => { const r = v.getBoundingClientRect(), c = v.parentElement.getBoundingClientRect();
+        return r.width > c.width + 18 || v.scrollWidth > v.clientWidth + 1 || r.height > 2.6 * parseFloat(getComputedStyle(v).lineHeight); }).map(v => v.textContent);
       return { wide: document.documentElement.scrollWidth - document.documentElement.clientWidth, spill: [...new Set(spill)].slice(0, 4), sun };
     }"""
     phrases = json.dumps(LANG_PHRASES)
