@@ -24,7 +24,7 @@ Needs: pip install playwright astral ephem   (and Playwright's Chromium)
 Exit code 1 if anything FAILs; WARN lines are worth a look but can be timing (a new
 station report arriving between the app's fetch and this script's).
 """
-import argparse, asyncio, datetime as dt, functools, http.server, json, math, os, re, socketserver, sys, threading, time, urllib.request
+import argparse, asyncio, datetime as dt, functools, http.server, json, math, os, re, socketserver, sys, threading, time, urllib.parse, urllib.request
 from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -80,6 +80,29 @@ def get_json(url, headers=None, tries=5):
             err = e
         time.sleep(1.5 * (a + 1))
     raise err
+
+
+def upd(j):
+    return ((j or {}).get('properties') or {}).get('updateTime') or ''
+
+
+async def nws_versions(url, first, tries=4):
+    """weather.gov answers from many servers, and for a while after each forecast update some of them still
+    hand out the previous version. Fetch the product a few more times and return the distinct versions seen
+    (the first one included), so a mismatch can be told apart from that."""
+    seen = {(upd(first), ((first.get('properties') or {}).get('generatedAt'))): first}
+    for _ in range(tries):
+        await asyncio.sleep(1.5)
+        try:
+            j = await asyncio.to_thread(get_json, url)
+        except Exception:
+            continue
+        seen.setdefault((upd(j), j['properties'].get('generatedAt')), j)
+    return list(seen.values())
+
+
+def hhmm(iso):
+    return iso[11:16] + 'Z' if iso else '?'
 
 
 def c2f(c):
@@ -446,66 +469,93 @@ async def check_place(browser, base, place, sem, results):
                 res['warn'].append(f'metric check skipped: {e}')
 
         # ---- hourly strip vs NWS hourly
-        periods = hr['properties']['periods']
-        start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > time.time()), 0)
-        mism = []
-        for k, h in enumerate(app['hours'][1:7], start=1):
-            if start + k >= len(periods):
-                break
-            p = periods[start + k]
-            if num(h['v']) != p['temperature']:
-                mism.append(f"{h['t']} app {h['v']} vs NWS {p['temperature']}°")
-            pop = round10((p.get('probabilityOfPrecipitation') or {}).get('value') or 0)
-            shown = num(h['p']) if h['p'] else 0
-            if (pop >= 20 and shown != pop) or (pop < 20 and shown):
-                mism.append(f"{h['t']} chance app {h['p']} vs NWS {pop}%")
+        def hourly_mismatch(hj):
+            periods = hj['properties']['periods']
+            start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > time.time()), 0)
+            out = []
+            for k, h in enumerate(app['hours'][1:7], start=1):
+                if start + k >= len(periods):
+                    break
+                p = periods[start + k]
+                if num(h['v']) != p['temperature']:
+                    out.append(f"{h['t']} app {h['v']} vs NWS {p['temperature']}°")
+                pop = round10((p.get('probabilityOfPrecipitation') or {}).get('value') or 0)
+                shown = num(h['p']) if h['p'] else 0
+                if (pop >= 20 and shown != pop) or (pop < 20 and shown):
+                    out.append(f"{h['t']} chance app {h['p']} vs NWS {pop}%")
+            return out
+        mism = hourly_mismatch(hr)
+        if mism:
+            versions = await nws_versions(pp['forecastHourly'], hr)
+            newest = max(upd(v) for v in versions)
+            match = next((v for v in versions if not hourly_mismatch(v)), None)
+            if match is not None:
+                if upd(match) < newest:
+                    res['warn'].append(f"hourly: app shows the NWS update from {hhmm(upd(match))}; some weather.gov servers already have {hhmm(newest)} (they disagree for a while after each update)")
+                else:
+                    res['info'].append(f"hourly strip matches the newest NWS update ({hhmm(newest)}) ✓ (weather.gov first handed this check an older copy)")
+                mism = None
         if mism:
             res['fail'].append('hourly: ' + '; '.join(mism[:4]))
-        else:
+        elif mism == []:
             res['info'].append(f"hourly strip matches NWS for the next {min(6, len(app['hours']) - 1)} hours ✓")
 
         # ---- daily rows vs NWS periods + extended model
-        exp_rows = nws_rows(fc['properties']['periods'], zone)
         ext_rows = ext_days(ext, zone) if ext else {}
         if not ext:
             ext = {'_model': app['extTag'] or 'NBM'}
         if app['extTag'] and app['extTag'] != ext['_model']:
             res['fail'].append(f"extended outlook labeled {app['extTag']} but the source is {ext['_model']}")
-        bad = []
-        n_nws = n_ext = 0
-        for r in app['days']:
-            d = r['date']
-            if d < today.isoformat():
-                bad.append(f'{d} is in the past but still listed')
-                continue
-            if d in exp_rows:
-                n_nws += 1
-                e = exp_rows[d]
-                if e['hi'] is not None and num(r['hi']) != e['hi'] and d != today.isoformat():
-                    bad.append(f"{r['label']} high app {r['hi']} vs NWS {e['hi']}°")
-                if e['lo'] is not None and num(r['lo']) != e['lo']:
-                    bad.append(f"{r['label']} low app {r['lo']} vs NWS {e['lo']}°")
-                if e['lo'] is None and r['lo']:
-                    x = ext_rows.get(d)
-                    if not r['est']:
-                        bad.append(f"{r['label']} low {r['lo']} not marked as a model estimate")
-                    elif x and x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
-                        bad.append(f"{r['label']} model low app {r['lo']} vs {ext['_model']} night min {jsround(x['lo'])}°")
-                pop = round10(e['pop'])
-                shown = num(r['p']) if r['p'] else 0
-                if (pop >= 20 and shown != pop) or (pop < 20 and shown):
-                    bad.append(f"{r['label']} chance app {r['p']} vs NWS {pop}%")
-            elif not ext_rows:
-                n_ext += 1
-            elif d in ext_rows:
-                n_ext += 1
-                x = ext_rows[d]
-                if num(r['hi']) != jsround(x['hi']):
-                    bad.append(f"{r['label']} {ext['_model']} high app {r['hi']} vs {jsround(x['hi'])}°")
-                if x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
-                    bad.append(f"{r['label']} {ext['_model']} low app {r['lo']} vs {jsround(x['lo'])}°")
-            else:
-                bad.append(f"{r['label']} ({d}) isn't in either source")
+
+        def daily_cmp(fj):
+            exp_rows = nws_rows(fj['properties']['periods'], zone)
+            bad = []
+            n_nws = n_ext = 0
+            for r in app['days']:
+                d = r['date']
+                if d < today.isoformat():
+                    bad.append(f'{d} is in the past but still listed')
+                    continue
+                if d in exp_rows:
+                    n_nws += 1
+                    e = exp_rows[d]
+                    if e['hi'] is not None and num(r['hi']) != e['hi'] and d != today.isoformat():
+                        bad.append(f"{r['label']} high app {r['hi']} vs NWS {e['hi']}°")
+                    if e['lo'] is not None and num(r['lo']) != e['lo']:
+                        bad.append(f"{r['label']} low app {r['lo']} vs NWS {e['lo']}°")
+                    if e['lo'] is None and r['lo']:
+                        x = ext_rows.get(d)
+                        if not r['est']:
+                            bad.append(f"{r['label']} low {r['lo']} not marked as a model estimate")
+                        elif x and x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
+                            bad.append(f"{r['label']} model low app {r['lo']} vs {ext['_model']} night min {jsround(x['lo'])}°")
+                    pop = round10(e['pop'])
+                    shown = num(r['p']) if r['p'] else 0
+                    if (pop >= 20 and shown != pop) or (pop < 20 and shown):
+                        bad.append(f"{r['label']} chance app {r['p']} vs NWS {pop}%")
+                elif not ext_rows:
+                    n_ext += 1
+                elif d in ext_rows:
+                    n_ext += 1
+                    x = ext_rows[d]
+                    if num(r['hi']) != jsround(x['hi']):
+                        bad.append(f"{r['label']} {ext['_model']} high app {r['hi']} vs {jsround(x['hi'])}°")
+                    if x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
+                        bad.append(f"{r['label']} {ext['_model']} low app {r['lo']} vs {jsround(x['lo'])}°")
+                else:
+                    bad.append(f"{r['label']} ({d}) isn't in either source")
+            return bad, n_nws, n_ext
+
+        bad, n_nws, n_ext = daily_cmp(fc)
+        if bad:
+            versions = await nws_versions(pp['forecast'], fc)
+            newest = max(upd(v) for v in versions)
+            tried = sorted(((daily_cmp(v), v) for v in versions), key=lambda t: len(t[0][0]))
+            (bad2, n2, e2), match = tried[0]
+            if not bad2:
+                bad, n_nws, n_ext = bad2, n2, e2
+                if upd(match) < newest:
+                    res['warn'].append(f"daily: app shows the NWS update from {hhmm(upd(match))}; some weather.gov servers already have {hhmm(newest)} (they disagree for a while after each update)")
         if bad:
             res['fail'].append('daily: ' + '; '.join(bad[:5]))
         else:
@@ -876,6 +926,130 @@ async def check_install(browser, base, results, pw):
     await ctx.close()
 
 
+async def check_search_and_report(browser, base, results, pw):
+    """Place search (instant results from the built-in list, ranking, ZIP codes, keyboard, the search box
+    never being replaced while typing) and the Report a bug form (mailto with the report filled in)."""
+    res = {'place': 'Search and bug reports', 'fail': [], 'warn': [], 'info': []}
+    results.append(res)
+    seed = ("if (!localStorage.getItem('gp:places')) { localStorage.setItem('gp:places', JSON.stringify([{id:'northfield-mn', name:'Northfield', region:'MN', lat:44.4620, lon:-93.1830}])); }"
+            "localStorage.setItem('gp:tipDone', 'true');"
+            "document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href^=\\'mailto:\\']'); if (a) { window.__mailto = a.href; e.preventDefault(); } }, true);")
+    loaded = "document.querySelector('.hero-temp') && document.querySelector('.hero-temp').textContent.trim() !== '--'"
+    names = "[...document.querySelectorAll('#rw-side .res .res-name')].map(x => x.textContent.trim())"
+    ctx = await browser.new_context(viewport={'width': 1280, 'height': 900})
+    await ctx.add_init_script(seed)
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        box = page.locator('#q-side')
+        await page.evaluate("document.getElementById('q-side').__mark = 1")
+        want = {'mill': ('Millbrae, CA', 15), 'san': ('San Diego, CA', 10), 'st paul': ('Saint Paul, MN', 1), 'portland, or': ('Portland, OR', 1),
+                'new york': ('New York City, NY', 1), '55057': ('Northfield, MN', 1), 'honolulu': ('Honolulu, HI', 1), 'san juan pr': ('San Juan, PR', 1)}
+        probs, seen = [], []
+        for q, (name, top) in want.items():
+            await box.fill('')
+            await box.type(q, delay=25)
+            try:
+                await page.wait_for_function(f"[...document.querySelectorAll('#rw-side .res .res-name')].some(x => x.textContent.trim() === {json.dumps(name)})", timeout=15000)
+            except Exception:
+                pass
+            got = await page.evaluate(names)
+            if name not in got[:top]:
+                probs.append(f'{q!r}: {name} not in the top {top} ({got[:5]})')
+            else:
+                seen.append(f'{q} → {name}')
+        same = await page.evaluate("document.activeElement && document.activeElement.id === 'q-side' && document.activeElement.__mark === 1")
+        if not same:
+            probs.append('the search box was replaced or lost focus while typing')
+        await box.fill('')
+        await box.type('xyzq', delay=25)
+        await page.wait_for_timeout(600)
+        empty = await page.evaluate("(document.querySelector('#rw-side .empty') || {}).textContent || ''")
+        if 'No U.S. places match' not in empty:
+            probs.append(f'no "no matches" message ({empty!r})')
+        await box.fill('')
+        await box.type('duluth', delay=25)
+        await page.wait_for_function("document.querySelectorAll('#rw-side .res').length > 1", timeout=15000)
+        await page.keyboard.press('ArrowDown')
+        await page.keyboard.press('ArrowDown')
+        pick = await page.evaluate("document.querySelector('#rw-side .res.hl .res-name').textContent.trim()")
+        await page.keyboard.press('Enter')
+        await page.wait_for_timeout(500)
+        hero = await page.evaluate("document.querySelector('.hero-place').textContent.trim()")
+        if not pick.startswith(hero):
+            probs.append(f'arrow keys + Enter picked {pick!r} but the app shows {hero!r}')
+        await box.click()
+        await box.type('bos', delay=25)
+        await page.keyboard.press('Escape')
+        st = await page.evaluate("({ q: document.getElementById('q-side').value, list: !document.getElementById('pw-side').hidden })")
+        if st['q'] or not st['list']:
+            probs.append(f"Escape didn't clear the search ({st})")
+        if probs:
+            res['fail'].append('search: ' + '; '.join(probs))
+        else:
+            res['info'].append('search: ' + ', '.join(seen) + '; no-match message, arrow keys + Enter, Escape, box kept while typing ✓')
+
+        # Report a bug
+        await page.click('.sidebar [data-bug]')
+        await page.click('[data-bug-send]')
+        complained = await page.evaluate("!document.getElementById('bug-err').hidden")
+        await page.fill('#bug-text', 'Test report: the search found the wrong town.')
+        await page.select_option('#bug-area', 'Search')
+        await page.click('[data-bug-send]')
+        mail = await page.evaluate('window.__mailto || ""')
+        u = urllib.parse.urlparse(mail)
+        qs = urllib.parse.parse_qs(u.query)
+        body = (qs.get('body') or [''])[0]
+        subj = (qs.get('subject') or [''])[0]
+        probs = []
+        if not complained:
+            probs.append('an empty report was not stopped')
+        if u.scheme != 'mailto' or u.path != 'swagmasterfive@emersonxia.lol':
+            probs.append(f'mail goes to {u.scheme}:{u.path}')
+        if not subj.startswith('Gridpoint bug report: Test report'):
+            probs.append(f'subject {subj!r}')
+        if 'Test report: the search found the wrong town.' not in body or 'Part of the app: Search' not in body or 'Gridpoint build:' not in body or 'Browser:' not in body:
+            probs.append(f'body missing parts: {body[:200]!r}')
+        await page.keyboard.press('Escape')
+        closed = await page.evaluate("document.getElementById('bugSheet').hidden && !document.documentElement.classList.contains('locked')")
+        if not closed:
+            probs.append("Escape didn't close the form")
+        if probs:
+            res['fail'].append('bug report: ' + '; '.join(probs))
+        else:
+            res['info'].append('bug report: empty report stopped; mail to swagmasterfive@emersonxia.lol with subject and details; closes ✓')
+    except Exception as e:
+        res['fail'].append(f'search/report check failed: {e}')
+    await ctx.close()
+
+    # iPhone: the places sheet keeps the same search box (and so the keyboard) while results update
+    opts = dict(pw.devices['iPhone 13'])
+    opts.pop('default_browser_type', None)
+    ctx = await browser.new_context(**opts)
+    await ctx.add_init_script(seed)
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        await page.click('[data-open-places]')
+        await page.click('#q-sheet')
+        await page.evaluate("document.getElementById('q-sheet').__mark = 1")
+        await page.keyboard.type('millb', delay=60)
+        await page.wait_for_function("[...document.querySelectorAll('#rw-sheet .res .res-name')].some(x => x.textContent.trim() === 'Millbrae, CA')", timeout=15000)
+        same = await page.evaluate("document.activeElement && document.activeElement.__mark === 1")
+        await page.click('#rw-sheet .res >> nth=0')
+        await page.wait_for_timeout(400)
+        st = await page.evaluate("({ sheet: !document.getElementById('placesSheet').hidden, hero: document.querySelector('.hero-place').textContent.trim() })")
+        if not same or st['sheet'] or st['hero'] != 'Millbrae':
+            res['fail'].append(f"iPhone search: box kept {same}, sheet open {st['sheet']}, shows {st['hero']!r}")
+        else:
+            res['info'].append('iPhone search: same box (keyboard stays up) while typing; tapping Millbrae adds it and closes the sheet ✓')
+    except Exception as e:
+        res['fail'].append(f'iPhone search check failed: {e}')
+    await ctx.close()
+
+
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -921,6 +1095,8 @@ async def main():
             await check_offline(browser, base, results)
         if not args.only or 'install' in args.only.lower():
             await check_install(browser, base, results, p)
+        if not args.only or 'search' in args.only.lower():
+            await check_search_and_report(browser, base, results, p)
         await browser.close()
     if srv:
         srv.shutdown()

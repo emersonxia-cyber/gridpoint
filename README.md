@@ -17,6 +17,13 @@ Gridpoint is a single-page web app. There's no server code: each visitor's brows
 | **Moon phases** | Meeus, *Astronomical Algorithms*, ch. 49 (within a minute or two of the ephem library). |
 | **Radar** | The NWS radar loop for the place's radar site. |
 | **Forecaster's discussion** | The latest Area Forecast Discussion from the local NWS office. |
+| **Place search** | A built-in list of U.S. places (`places.json`: every place in GeoNames with 500+ people, plus Puerto Rico, Guam and the U.S. Virgin Islands), so results show on every keystroke and work offline; bigger and nearer places rank first. ZIP codes come from `zips/` (the zipcodes package). A place too small for the list is looked up with Open-Meteo's geocoder. `data/build_places.py` rebuilds the files. |
+
+weather.gov answers from many servers, and for a while after each forecast update some of them still hand out the previous version. Each forecast product says which update it's built from, so if the 7-day, hourly and grid products disagree, Gridpoint asks again for the older ones and keeps the newest.
+
+## Report a bug
+
+Report a bug (under About, and at the bottom of the page) opens a short form. Gridpoint has no server, so the report goes out from the visitor's own email app: the form fills in a message to swagmasterfive@emersonxia.lol with the subject "Gridpoint bug report: …", plus details that help reproduce the problem (the place and its NWS forecast area and station, browser, screen size, recent script errors). The visitor sees everything before sending and can leave the details out. To file these automatically, add a Mail rule in iCloud (Subject contains "Gridpoint bug report" → move to a "Gridpoint bug reports" folder).
 
 ## Put it online
 
@@ -38,7 +45,7 @@ The page asks for Helvetica Now first (Display for large numbers, Text for body,
 
 ## Checking it
 
-`check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, offline use, and the Home Screen guide on iPhone, Android and a computer.
+`check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, offline use, and the Home Screen guide on iPhone, Android and a computer, place search, and the bug report form. When weather.gov's servers disagree about the latest forecast, it checks the app against each version they hand out.
 
 ```
 pip install playwright astral ephem
@@ -53,4 +60,4 @@ WARN lines are worth a look but are often timing: a new station report or foreca
 
 ## Data credits
 
-National Weather Service / NOAA (api.weather.gov, public domain) · Iowa Environmental Mesonet, Iowa State University · Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), free for non-commercial use.
+National Weather Service / NOAA (api.weather.gov, public domain) · Iowa Environmental Mesonet, Iowa State University · Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), free for non-commercial use · Place names from [GeoNames](https://www.geonames.org/) (CC BY 4.0) · ZIP codes from the [zipcodes](https://www.npmjs.com/package/zipcodes) package (BSD).

@@ -219,12 +219,15 @@ a { color: inherit; }
 }
 .search input::placeholder { color: var(--fg2); }
 .search > svg { position: absolute; left: 10px; top: 10px; width: 16px; height: 16px; opacity: .75; pointer-events: none; }
-.results { margin-top: 6px; border-radius: 0; background: rgba(10,18,34,0.85); overflow: hidden; }
-.results button { display: block; width: 100%; text-align: left; padding: 10px 12px; border-top: 1px solid var(--hair); font-size: 14.5px; }
-.results button:first-child { border-top: 0; }
-.results button:hover, .results button:focus-visible { background: rgba(255,255,255,0.08); }
-.results .sub { color: var(--fg2); font-size: 12.5px; }
-.results .empty { padding: 10px 12px; color: var(--fg2); font-size: 13.5px; }
+/* search results: a plain list under the box, the typed letters in bold (as in Apple Weather) */
+.results { margin-top: 8px; background: rgba(10,18,34,0.5); }
+.res { display: block; width: 100%; text-align: left; padding: 8px 12px 9px; border-top: 1px solid var(--hair); }
+.res:first-child { border-top: 0; }
+.res.hl { background: rgba(255,255,255,0.15); }
+.res-name { display: block; font-size: 15px; line-height: 1.3; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res-name b, .res-sub b { font-weight: 700; color: var(--fg); }
+.res-sub { display: block; margin-top: 1px; font-size: 12.5px; line-height: 1.3; color: var(--fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results .empty { padding: 12px; color: var(--fg2); font-size: 13.5px; line-height: 1.4; }
 .herebtn { display: flex; align-items: center; gap: 8px; width: 100%; margin: 10px 0 4px; padding: 8px 10px; border-radius: 0; font-size: 14px; font-weight: 500; background: rgba(255,255,255,0.08); }
 .herebtn svg { width: 15px; height: 15px; }
 .plist { display: grid; gap: 10px; margin-top: 10px; }
@@ -395,6 +398,27 @@ html.locked, html.locked body { overflow: hidden; }
 .ig-more details[open] summary::after { content: '–'; }
 .ig-more details > div { padding: 0 0 12px; }
 .install-panel .note { color: var(--fg2); font-size: 13.5px; }
+.install-panel .note a { color: var(--fg); }
+.bug-l { display: block; margin: 18px 0 6px; font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--fg2); }
+.bug-opt { text-transform: none; letter-spacing: 0; color: var(--fg3); }
+.bug-panel textarea, .bug-panel select { display: block; width: 100%; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 0; background: rgba(255,255,255,0.08); color: var(--fg); font: 15px/1.45 var(--font); }
+.bug-panel textarea { min-height: 128px; resize: vertical; }
+.bug-panel select { height: 42px; padding: 0 10px; }
+.bug-panel textarea:focus, .bug-panel select:focus { outline: none; border-color: rgba(255,255,255,0.75); }
+.bug-panel textarea::placeholder { color: var(--fg3); }
+.bug-err { margin: 6px 0 0; font-size: 13px; color: var(--sev-minor); }
+.bug-check { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; font-size: 14px; line-height: 1.4; cursor: pointer; }
+.bug-check input { flex: none; -webkit-appearance: none; appearance: none; display: grid; place-content: center; width: 18px; height: 18px; margin: 1px 0 0; border: 1.5px solid rgba(255,255,255,0.65); border-radius: 0; background: transparent; cursor: pointer; }
+.bug-check input:checked { background: #64c8ff; border-color: #64c8ff; }
+.bug-check input:checked::after { content: ''; width: 9px; height: 5px; margin-top: -2px; border: solid #0b1a2e; border-width: 0 0 2px 2px; transform: rotate(-45deg); }
+.bug-check input:focus-visible { outline: 2px solid rgba(255,255,255,0.9); outline-offset: 2px; }
+.bug-peek { margin-top: 8px; font-size: 13px; color: var(--fg2); }
+.bug-peek summary { cursor: pointer; padding: 4px 0; }
+.bug-peek pre { margin: 6px 0 0; max-height: 220px; overflow: auto; padding: 10px 12px; background: rgba(0,0,0,0.28); white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; color: var(--fg2); }
+.bug-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.bug-actions .btn1 { flex: 1 1 200px; width: auto; margin: 0; }
+.bug-actions .btn2 { min-height: 46px; }
+.footlink { font-size: 12px; color: var(--fg2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,.35); }
 .ig-share { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 22px; }
 .ig-url { font-size: 13px; color: var(--fg2); }
 </style>
@@ -409,6 +433,7 @@ html.locked, html.locked body { overflow: hidden; }
 <div class="sheet" id="daySheet" hidden></div>
 <div class="sheet" id="placesSheet" hidden></div>
 <div class="sheet" id="installSheet" hidden></div>
+<div class="sheet" id="bugSheet" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="icondefs"></defs></svg>
 
 <script>
@@ -419,6 +444,12 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
+const APP_BUILD = '2026-10-25 19:24 UTC';
+/* the last few script errors, kept in memory only, so a bug report can include them */
+const recentErrors = [];
+const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
+window.addEventListener('error', e => { if (e && e.message) noteError(`${e.message} (${String(e.filename || '').split('/').pop()}:${e.lineno || 0})`); });
+window.addEventListener('unhandledrejection', e => noteError('promise: ' + ((e && e.reason && (e.reason.message || e.reason)) || 'unknown')));
 const MODEL_VERSION = 6;
 const REFRESH_MS = 10 * 60 * 1000;
 const HOUR = 3600e3, DAY = 864e5;
@@ -437,7 +468,7 @@ const state = {
   models: {}, loading: {}, errors: {},
   editing: false,
   day: null, metric: 'conditions', feels: false,
-  results: null, query: '',
+  results: null, query: '', hl: -1, searchBusy: false,
 };
 if (!Array.isArray(state.places) || !state.places.length) state.places = DEFAULT_PLACES.map(p => ({ ...p }));
 if (!state.places.some(p => p.id === state.selected)) state.selected = state.places[0].id;
@@ -803,13 +834,13 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 
 /* ============================== network ============================== */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function getJSON(url, { retries = 2, timeout = 20000, accept } = {}) {
+async function getJSON(url, { retries = 2, timeout = 20000, accept, cache } = {}) {
   let last;
   for (let a = 0; a <= retries; a++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeout);
     try {
-      const res = await fetch(url, { headers: accept ? { Accept: accept } : undefined, signal: ctrl.signal });
+      const res = await fetch(url, { headers: accept ? { Accept: accept } : undefined, signal: ctrl.signal, cache: cache || 'default' });
       clearTimeout(timer);
       if (res.ok) return await res.json();
       const err = new Error('HTTP ' + res.status); err.status = res.status;
@@ -996,19 +1027,125 @@ async function getExt(place, tz, model) {
 }
 const extName = m => m && m.ext === 'GFS' ? 'NOAA GFS model' : 'National Blend of Models';
 const extTag = m => m && m.ext === 'GFS' ? 'GFS' : 'NBM';
-async function searchPlaces(q) {
-  const raw = q.trim();
-  if (raw.length < 2) return [];
-  const [name, region] = raw.split(',').map(s => s.trim());
-  const qs = new URLSearchParams({ name, count: '10', language: 'en', format: 'json', countryCode: 'US' });
-  const j = await getJSON('https://geocoding-api.open-meteo.com/v1/search?' + qs, { retries: 1 });
-  let r = (j.results || []).map(x => ({ name: x.name, region: STATE_ABBR[x.admin1] || x.admin1 || '', regionFull: x.admin1 || '', county: x.admin2 || '', lat: x.latitude, lon: x.longitude }));
-  if (region) {
-    const R = region.toLowerCase();
-    const f = r.filter(x => x.region.toLowerCase() === R || x.regionFull.toLowerCase().startsWith(R));
-    if (f.length) r = f;
+/* ============================== place search ==============================
+   Searches a built-in list of U.S. places (places.json: GeoNames, every place with 500+ people, plus
+   Puerto Rico, Guam and the U.S. Virgin Islands), so results show on every keystroke and work offline.
+   Bigger and nearer places rank first. ZIP codes come from zips/<first digit>.json. Anything the list
+   doesn't have (a very small place) is looked up with Open-Meteo's geocoder as a fallback. */
+const normName = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[’'`]/g, '').replace(/[.\-–—/(),]+/g, ' ').replace(/\s+/g, ' ').trim();
+/* "St. Paul" and "Saint Paul", "Ft Myers" and "Fort Myers", "Mt Vernon" and "Mount Vernon" */
+const NAME_ABBR = [[/\bsaint\b/g, 'st'], [/\bsainte\b/g, 'ste'], [/\bfort\b/g, 'ft'], [/\bmount\b/g, 'mt'], [/\bmountain\b/g, 'mtn'], [/\bpoint\b/g, 'pt'], [/\bport\b/g, 'pt']];
+const canonName = s => NAME_ABBR.reduce((a, [re, to]) => a.replace(re, to), s);
+const NICKNAMES = { nyc: 'new york city', 'new york': 'new york city', sf: 'san francisco', philly: 'philadelphia', vegas: 'las vegas', nola: 'new orleans', slc: 'salt lake city', okc: 'oklahoma city', dc: 'washington', 'washington dc': 'washington', 'd c': 'washington', la: 'los angeles', 'l a': 'los angeles', kc: 'kansas city', abq: 'albuquerque', atl: 'atlanta', chi: 'chicago', msp: 'minneapolis' };
+let placeIndex = null, placeIndexP = null;
+function loadPlaceIndex() {
+  if (placeIndex) return Promise.resolve(placeIndex);
+  if (!placeIndexP) placeIndexP = getJSON('places.json', { retries: 1, timeout: 30000 }).then(doc => {
+    const regions = doc.regions.map(([code, name]) => ({ code, name, n: normName(name), c: code.toLowerCase() }));
+    const places = doc.rows.split('\n').map(line => {
+      const [name, r, c, la, lo, p] = line.split('|'), n = normName(name);
+      return { name, r: +r, c: +c, lat: +la / 1000, lon: +lo / 1000, pop: +p * 100, n, k: canonName(n) };
+    });
+    return (placeIndex = { regions, counties: doc.counties, places });
+  }).catch(e => { placeIndexP = null; throw e; });
+  return placeIndexP;
+}
+const zipChunks = {};
+function loadZips(d) {
+  if (!zipChunks[d]) zipChunks[d] = getJSON(`zips/${d}.json`, { retries: 1, timeout: 30000 }).then(doc => doc.rows.split('\n')).catch(e => { delete zipChunks[d]; throw e; });
+  return zipChunks[d];
+}
+const kmBetween = (a, b, c, d) => {
+  const R = Math.PI / 180, x = (d - b) * R * Math.cos((a + c) / 2 * R), y = (c - a) * R;
+  return 6371 * Math.sqrt(x * x + y * y);
+};
+/* "springfield il", "portland, or", "san jose california": the place name, and the state(s) named */
+function readQuery(idx, raw) {
+  const n = normName(raw), out = [{ name: n, regions: null }];
+  if (!n) return out;
+  const parts = String(raw).split(',');
+  if (parts.length > 1) {
+    const name = normName(parts.slice(0, -1).join(' ')), st = normName(parts[parts.length - 1]);
+    if (name && st) {
+      const rs = idx.regions.map((r, i) => r.c === st || r.n.startsWith(st) ? i : -1).filter(i => i >= 0);
+      return [{ name, regions: new Set(rs) }];
+    }
+    return [{ name: name || n, regions: null }];
   }
-  return r.slice(0, 8);
+  const w = n.split(' ');
+  for (let k = Math.min(3, w.length - 1); k >= 1; k--) {
+    const st = w.slice(-k).join(' '), name = w.slice(0, -k).join(' ');
+    const rs = idx.regions.map((r, i) => r.n === st || (k === 1 && r.c === st) ? i : -1).filter(i => i >= 0);
+    if (rs.length && name) out.unshift({ name, regions: new Set(rs) });
+  }
+  return out;
+}
+function searchIndex(idx, raw, near, limit = 15) {
+  const best = new Map();
+  for (const q of readQuery(idx, raw)) {
+    const names = [q.name, canonName(q.name)];
+    if (NICKNAMES[q.name]) names.push(NICKNAMES[q.name]);
+    for (let i = 0; i < idx.places.length; i++) {
+      const p = idx.places[i];
+      if (q.regions && !q.regions.has(p.r)) continue;
+      let m = 0;
+      for (const s of names) {
+        if (!s) continue;
+        if (p.n === s || p.k === s) { m = 3; break; }
+        if (p.n.startsWith(s) || p.k.startsWith(s)) m = Math.max(m, 2);
+        else if (s.length >= 2 && (p.n.includes(' ' + s) || p.k.includes(' ' + s))) m = Math.max(m, 1);
+      }
+      if (!m) continue;
+      /* exact name > starts with > a later word starts with; then size; then nearness */
+      let score = Math.log10(p.pop + 10) + (m === 3 ? 7 : m === 2 ? 5 : 1) + (q.regions ? 1 : 0);
+      if (near) { const d = kmBetween(near.lat, near.lon, p.lat, p.lon); score += d < 60 ? 2 : d < 200 ? 1.1 : d < 500 ? 0.4 : 0; }
+      const prev = best.get(i);
+      if (!prev || prev.score < score) best.set(i, { i, score, q: q.name });
+    }
+  }
+  return [...best.values()].sort((a, b) => b.score - a.score || idx.places[b.i].pop - idx.places[a.i].pop).slice(0, limit).map(h => {
+    const p = idx.places[h.i], r = idx.regions[p.r];
+    return { name: p.name, region: r.code, regionFull: r.name, county: idx.counties[p.c] || '', lat: p.lat, lon: p.lon, match: h.q };
+  });
+}
+function zipSearch(idx, rows, q) {
+  const out = [];
+  for (const line of rows) {
+    if (!line.startsWith(q)) continue;
+    const [zip, city, r, la, lo] = line.split('|'), reg = idx ? idx.regions[+r] : null;
+    out.push({ name: city, region: reg ? reg.code : '', regionFull: reg ? reg.name : '', county: '', zip, lat: +la / 1000, lon: +lo / 1000, match: '' });
+    if (out.length >= 15) break;
+  }
+  return out;
+}
+/* a place too small for the built-in list: ask Open-Meteo's geocoder, keep only real name matches */
+async function remoteSearch(raw) {
+  const [name] = raw.split(',').map(s => s.trim());
+  const qs = new URLSearchParams({ name, count: '100', language: 'en', format: 'json', countryCode: 'US' });
+  const j = await getJSON('https://geocoding-api.open-meteo.com/v1/search?' + qs, { retries: 0, timeout: 8000 });
+  const nq = normName(name);
+  return (j.results || []).filter(x => { const n = normName(x.name); return n.startsWith(nq) || n.includes(' ' + nq); })
+    .map(x => ({ name: x.name, region: STATE_ABBR[x.admin1] || '', regionFull: x.admin1 || '', county: x.admin2 || '', lat: x.latitude, lon: x.longitude, match: nq }))
+    .filter(x => x.region);
+}
+/* bold the letters that matched, the way Apple Weather does */
+function boldMatch(name, q) {
+  if (!q) return esc(name);
+  const want = [q, canonName(q)];
+  const starts = [0];
+  for (let j = 1; j < name.length; j++) if (/[\s\-/]/.test(name[j - 1])) starts.push(j);
+  for (const j of starts) {
+    for (let i = j + 1; i <= name.length; i++) {
+      const s = normName(name.slice(j, i));
+      if (want.includes(s) || want.includes(canonName(s))) {
+        let e = i; while (e < name.length && /[.'’]/.test(name[e])) e++;
+        return esc(name.slice(0, j)) + '<b>' + esc(name.slice(j, e)) + '</b>' + esc(name.slice(e));
+      }
+      if (s.length > q.length + 4) break;
+    }
+  }
+  return esc(name);
 }
 const STATE_ABBR = { Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', 'District of Columbia': 'DC', Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS', Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY', 'Puerto Rico': 'PR', Guam: 'GU' };
 
@@ -1197,6 +1334,25 @@ function buildModel(place, pt, r, ob) {
 }
 
 /* ============================== loading ============================== */
+/* weather.gov answers from many servers, and for a while after a forecaster's update (now and then for
+   hours) some still hand out the previous version. Each product says which update it's built from
+   (updateTime). If the 7-day, hourly and grid products disagree, ask again for the older ones, past the
+   browser's cache, and keep the newest copy: a few seconds at most. */
+async function newestNWS(res, urls) {
+  const when = r => (r && r.status === 'fulfilled' && r.value && r.value.properties && Date.parse(r.value.properties.updateTime)) || 0;
+  const best = Math.max(0, ...urls.map((u, i) => when(res[i])));
+  const until = Date.now() + 6000;
+  await Promise.all(urls.map(async (url, i) => {
+    if (!res[i] || res[i].status !== 'fulfilled') return;
+    for (let a = 0; a < 3 && when(res[i]) < best && Date.now() < until; a++) {
+      try {
+        const j = await nws(url, { retries: 0, timeout: Math.max(1500, until - Date.now()), cache: 'reload' });
+        if (j && j.properties && Date.parse(j.properties.updateTime) > when(res[i])) res[i] = { status: 'fulfilled', value: j };
+      } catch (e) { return; }
+    }
+  }));
+  return res;
+}
 const inflight = {}, lastExt = new Map();
 function loadPlace(place, { force = false } = {}) {
   if (inflight[place.id] && !force) return inflight[place.id];
@@ -1228,9 +1384,12 @@ function loadPlace(place, { force = false } = {}) {
       })().catch(() => null);
       const asSettled = pr => pr.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
       const extS = asSettled(extP);
+      /* the three forecast products are checked with weather.gov each time (never just taken from the
+         browser's cache), and if they disagree about which update is newest, the older ones are fetched again */
+      const FRESH = { cache: 'no-cache' };
       const core = Promise.allSettled([
-        nws(pt.forecast), nws(pt.hourly), nws(pt.grid, { timeout: 25000 }), getAlerts(place), getOffice(pt.office), obP, getDiscussion(pt.office),
-      ]);
+        nws(pt.forecast, FRESH), nws(pt.hourly, FRESH), nws(pt.grid, { timeout: 25000, ...FRESH }), getAlerts(place), getOffice(pt.office), obP, getDiscussion(pt.office),
+      ]).then(res => newestNWS(res, [pt.forecast, pt.hourly, pt.grid]));
       /* the official forecast shows as soon as it's in; days 8–11 get a moment to join, then fill in when they arrive */
       const nbm = await Promise.race([extS, core.then(() => sleep(1500)).then(() => null)]);
       const [fc, hr, grid, alerts, office, ob, afd] = await core;
@@ -1278,7 +1437,42 @@ const isDayNow = (m) => sunAltitude(Date.now(), m.place.lat, m.place.lon) > -0.8
 
 function render() { renderSidebar(); renderMain(); if (!$('daySheet').hidden) renderDaySheet(); if (!$('placesSheet').hidden) renderPlacesSheet(); }
 
+/* The places panel (sidebar on a computer, sheet on a phone) in three parts. While someone types, only
+   the results and the list below are redrawn; the search box itself is never replaced, so the cursor
+   and the phone's keyboard stay put. */
+const isSearching = () => state.query.trim().length > 0;
 function placesPanel(where) {
+  return `<div id="top-${where}">${panelTopHTML()}</div>
+    <div class="search">${ui('search')}<input id="q-${where}" type="search" placeholder="City, state or ZIP" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(state.query)}" aria-label="Search for a place" role="combobox" aria-autocomplete="list" aria-expanded="${isSearching()}" aria-controls="res-${where}"></div>
+    <div id="rw-${where}">${resultsHTML(where)}</div>
+    <div id="pw-${where}"${isSearching() ? ' hidden' : ''}>${panelListHTML()}</div>`;
+}
+const panelTopHTML = () => `<div class="sb-head"><div class="sb-title">Weather</div><button class="textbtn" data-edit>${state.editing ? 'Done' : 'Edit'}</button></div>`;
+function updatePanel(where) {
+  const top = $('top-' + where), rw = $('rw-' + where), pw = $('pw-' + where), inp = $('q-' + where);
+  if (!top || !rw || !pw || !inp) return false;
+  top.innerHTML = panelTopHTML();
+  rw.innerHTML = resultsHTML(where);
+  pw.hidden = isSearching();
+  if (!pw.hidden || !pw.firstChild) pw.innerHTML = panelListHTML();
+  if (inp !== document.activeElement && inp.value !== state.query) inp.value = state.query;
+  const rs = state.results || [];
+  inp.setAttribute('aria-expanded', isSearching());
+  if (isSearching() && rs.length && state.hl >= 0) inp.setAttribute('aria-activedescendant', `res-${where}-${Math.min(state.hl, rs.length - 1)}`);
+  else inp.removeAttribute('aria-activedescendant');
+  return true;
+}
+function resultsHTML(where) {
+  if (!isSearching()) return '';
+  const q = state.query.trim(), rs = state.results || [];
+  const empty = state.searchBusy ? 'Searching…'
+    : /^\d+$/.test(q) && q.length < 3 ? 'Keep typing the ZIP code.'
+    : `No U.S. places match “${esc(q)}”. Try adding the state, like “Springfield, IL”, or a ZIP code.`;
+  return `<div class="results" role="listbox" id="res-${where}" aria-label="Places that match">${rs.length ? rs.map((r, i) => `<button class="res${i === state.hl ? ' hl' : ''}" id="res-${where}-${i}" data-result="${i}" role="option" aria-selected="${i === state.hl}" tabindex="-1">
+      <span class="res-name">${boldMatch(r.name, r.match)}<span class="res-st">, ${esc(r.region)}</span></span>
+      <span class="res-sub">${r.zip ? `ZIP ${r.zip.startsWith(q) ? `<b>${esc(q)}</b>${esc(r.zip.slice(q.length))}` : esc(r.zip)} · ` : ''}${esc([r.county, r.regionFull].filter(Boolean).join(', '))}</span></button>`).join('') : `<div class="empty">${empty}</div>`}</div>`;
+}
+function panelListHTML() {
   const cards = state.places.map(p => {
     const m = viewModel(state.models[p.id]), c = m && m.current;
     const col = c ? SKY[skyKey(c.code, isDayNow(m))] : null;
@@ -1289,11 +1483,7 @@ function placesPanel(where) {
       <div class="pc-bot"><div class="pc-cond">${c ? esc(c.text) : state.errors[p.id] ? 'Couldn’t load' : '&nbsp;'}</div><div class="pc-hilo">${m && m.today ? `H:${fmtT(m.today.hi)} L:${fmtT(m.today.lo)}` : ''}</div></div>
     </button>${state.editing && state.places.length > 1 ? `<button class="pc-del" data-del="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">–</button>` : ''}</div>`;
   }).join('');
-  const results = state.results == null ? '' : `<div class="results" role="listbox">${state.results.length ? state.results.map((r, i) => `<button data-result="${i}" role="option">${esc(r.name)}, ${esc(r.region)}<div class="sub">${esc([r.county, r.regionFull].filter(Boolean).join(', '))}</div></button>`).join('') : `<div class="empty">No U.S. places match “${esc(state.query)}”.</div>`}</div>`;
-  return `<div class="sb-head"><div class="sb-title">Weather</div><button class="textbtn" data-edit>${state.editing ? 'Done' : 'Edit'}</button></div>
-    <div class="search">${ui('search')}<input id="q-${where}" type="search" placeholder="City, state or ZIP" autocomplete="off" value="${esc(state.query)}" aria-label="Search for a place"></div>
-    ${results}
-    ${'geolocation' in navigator ? `<button class="herebtn" data-here>${ui('pin')} Use my location</button>` : ''}
+  return `${'geolocation' in navigator ? `<button class="herebtn" data-here>${ui('pin')} Use my location</button>` : ''}
     <div class="plist">${cards}</div>
     ${aboutHTML()}`;
 }
@@ -1309,7 +1499,8 @@ function aboutHTML(extra = '') {
       <li><b>No ads, no tracking, no account.</b></li>
     </ul>
     ${isStandalone() || justInstalled ? '' : `<button class="about-install" data-install>${GL.add}<span>${esc(installLabel())}</span><span class="arr" aria-hidden="true">›</span></button>`}
-    <p class="about-fine">U.S. locations only. Data from NOAA and the National Weather Service, the Iowa Environmental Mesonet, and Open-Meteo.</p>
+    <button class="about-install" data-bug>${GL.bug}<span>Report a bug</span><span class="arr" aria-hidden="true">›</span></button>
+    <p class="about-fine">U.S. locations only. Data from NOAA and the National Weather Service, the Iowa Environmental Mesonet, and Open-Meteo. Place search uses GeoNames (CC BY 4.0).</p>
   </section>`;
 }
 
@@ -1341,6 +1532,7 @@ function installLabel() {
 const GL = {
   share: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M8 7.5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 10.5H5.5v10h13v-10h-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
   add: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  bug: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.2a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="7.5" y="8" width="9" height="12" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5V20M3.5 12.5h4M16.5 12.5h4M4 18h3.8M16.2 18H20M5 6.5l2.6 2.3M19 6.5l-2.6 2.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   install: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 20.5h8M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 const KB = s => `<span class="kbd" aria-hidden="true">${s}</span>`;
@@ -1452,22 +1644,100 @@ function routeGuide() {
   try { history.replaceState(null, '', appPath() + location.search); } catch (e) {}
   openGuide();
 }
+/* ============================== Report a bug ==============================
+   Gridpoint has no server, so a report goes out from the visitor's own email app: the form fills in a
+   message to the developer, with details that help reproduce the problem. Nothing is sent until they
+   press Send there, and they can leave the details out. */
+const BUG_TO = 'swagmasterfive@emersonxia.lol';
+const BUG_AREAS = ['Search', 'Current conditions', 'Hourly or 10-day forecast', 'Charts', 'Radar', 'Alerts', 'Forecaster discussion', 'Home Screen or offline', 'Something else'];
+const bugDraft = { text: '', area: '', details: true, sent: false };
+function bugDetails() {
+  const p = selectedPlace(), m = state.models[p.id], pl = m && m.place, c = m && m.current;
+  const tz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { return ''; } })();
+  const when = t => t ? new Date(t).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—';
+  return [
+    `Gridpoint build: ${APP_BUILD}`,
+    `Page: ${location.origin}${appPath()}`,
+    `Time: ${when(Date.now())}${tz ? ` (device time zone ${tz})` : ''}`,
+    `Place: ${p.id === 'here' ? `My Location${pl && pl.city ? ` (${pl.city}, ${pl.state || ''})` : ''}` : `${p.name}, ${p.region} (${(+p.lat).toFixed(2)}, ${(+p.lon).toFixed(2)})`}`,
+    pl ? `NWS: ${pl.office !== pl.grid ? `office ${pl.office}, ` : ''}grid ${pl.grid} ${pl.x},${pl.y} · radar ${pl.radar || '—'} · forecast issued ${when(m.issued)} · loaded ${when(m.fetchedAt)}` : 'NWS: not loaded',
+    c ? `Now: ${c.src === 'obs' ? `station ${c.station ? c.station.id : '?'} at ${when(c.t)}` : 'forecast hour (no recent station report)'}` : '',
+    m ? `Days 8–11: ${m.ext || 'not loaded'}` : '',
+    `Units: ${metric() ? '°C' : '°F'} · ${isOffline() ? 'offline' : 'online'} · ${isStandalone() ? 'installed app' : 'in the browser'}`,
+    `Screen: ${innerWidth}×${innerHeight} @${Math.round((window.devicePixelRatio || 1) * 100) / 100}x`,
+    `Browser: ${navigator.userAgent}`,
+    recentErrors.length ? `Recent errors: ${recentErrors.join(' | ')}` : 'Recent errors: none',
+  ].filter(Boolean).join('\n');
+}
+function bugMessage() {
+  const text = bugDraft.text.trim();
+  const first = text.split('\n')[0].replace(/\s+/g, ' ').slice(0, 70);
+  const subject = `Gridpoint bug report: ${first}${text.length > first.length ? '…' : ''}`;
+  const body = `${text}\n\n${bugDraft.area ? `Part of the app: ${bugDraft.area}\n\n` : ''}${bugDraft.details ? `— Details —\n${bugDetails()}\n` : ''}`;
+  return { subject, body };
+}
+function bugHTML() {
+  return `<div class="panel install-panel bug-panel" role="dialog" aria-modal="true" aria-labelledby="bug-title" tabindex="-1">
+    <div class="ig-top"><h2 class="ig-title" id="bug-title">Report a bug</h2><button class="xbtn" data-close-bug aria-label="Close">${ui('close')}</button></div>
+    <p class="ig-lead">Something wrong, missing or confusing? Say what you saw. Your report opens in your email app, addressed to Gridpoint’s developer, so you can read it before you send it.</p>
+    <label class="bug-l" for="bug-text">What went wrong?</label>
+    <textarea id="bug-text" rows="5" placeholder="For example: searching for my town found nothing, or the high for Tuesday doesn’t match weather.gov.">${esc(bugDraft.text)}</textarea>
+    <p class="bug-err" id="bug-err" hidden>Add a sentence about what went wrong first.</p>
+    <label class="bug-l" for="bug-area">Part of the app <span class="bug-opt">(optional)</span></label>
+    <select id="bug-area"><option value="">Choose one</option>${BUG_AREAS.map(a => `<option${a === bugDraft.area ? ' selected' : ''}>${esc(a)}</option>`).join('')}</select>
+    <label class="bug-check"><input type="checkbox" id="bug-details"${bugDraft.details ? ' checked' : ''}> <span>Include details that help find the problem: the place you’re viewing, its NWS forecast area and station, this browser and screen size, and any recent errors.</span></label>
+    <details class="bug-peek"><summary>See exactly what’s included</summary><pre id="bug-pre">${esc(bugDetails())}</pre></details>
+    <div class="bug-actions"><button class="btn1" data-bug-send>Open in email</button><button class="btn2" data-bug-copy><span class="lbl">Copy report</span></button></div>
+    <p class="note" id="bug-after"${bugDraft.sent ? '' : ' hidden'}>If your email app didn’t open, use Copy report and send it to <a href="mailto:${BUG_TO}">${BUG_TO}</a>.</p>
+    <p class="note">Reports go to ${BUG_TO} with the subject “Gridpoint bug report”. Gridpoint itself never sends anything.</p>
+  </div>`;
+}
+function openBug() {
+  $('bugSheet').innerHTML = bugHTML();
+  $('bugSheet').hidden = false;
+  const t = $('bug-text');
+  if (t && !IS_IOS && !IS_ANDROID) t.focus();
+  else { const p = $('bugSheet').querySelector('.panel'); if (p) { p.scrollTop = 0; try { p.focus({ preventScroll: true }); } catch (e) {} } }
+}
+function closeBug() { $('bugSheet').hidden = true; }
+function bugReady() {
+  if (bugDraft.text.trim()) return true;
+  const err = $('bug-err'); if (err) err.hidden = false;
+  const t = $('bug-text'); if (t) t.focus();
+  return false;
+}
+function sendBug() {
+  if (!bugReady()) return;
+  const { subject, body } = bugMessage();
+  bugDraft.sent = true;
+  const after = $('bug-after'); if (after) after.hidden = false;
+  const a = document.createElement('a');
+  a.href = `mailto:${BUG_TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  a.hidden = true; document.body.appendChild(a); a.click(); a.remove();
+}
+async function copyBug(btn) {
+  if (!bugReady()) return;
+  const { subject, body } = bugMessage(), lbl = btn.querySelector('.lbl');
+  try { await navigator.clipboard.writeText(`To: ${BUG_TO}\nSubject: ${subject}\n\n${body}`); if (lbl) lbl.textContent = 'Copied'; }
+  catch (e) { if (lbl) lbl.textContent = 'Couldn’t copy'; }
+}
+document.addEventListener('input', e => {
+  if (e.target.id === 'bug-text') { bugDraft.text = e.target.value; const err = $('bug-err'); if (err && e.target.value.trim()) err.hidden = true; }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'bug-area') bugDraft.area = e.target.value;
+  if (e.target.id === 'bug-details') bugDraft.details = e.target.checked;
+});
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; refreshInstallUI(); });
 window.addEventListener('appinstalled', () => { installEvt = null; justInstalled = true; store.set('tipDone', true); refreshInstallUI(); });
 window.addEventListener('hashchange', routeGuide);
 function renderSidebar() {
-  const sb = $('sidebar');
-  const active = document.activeElement && document.activeElement.id === 'q-side';
-  const pos = active ? document.activeElement.selectionStart : null;
-  sb.innerHTML = placesPanel('side');
-  if (active) { const q = $('q-side'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) {} }
+  if (updatePanel('side')) return;
+  $('sidebar').innerHTML = placesPanel('side');
 }
 function renderPlacesSheet() {
-  const sh = $('placesSheet');
-  const active = document.activeElement && document.activeElement.id === 'q-sheet';
-  const pos = active ? document.activeElement.selectionStart : null;
-  sh.innerHTML = `<div class="panel places-panel" role="dialog" aria-modal="true" aria-label="Places"><div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="xbtn" data-close aria-label="Close">${ui('close')}</button></div>${placesPanel('sheet')}</div>`;
-  if (active) { const q = $('q-sheet'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) {} }
+  if (updatePanel('sheet')) return;
+  $('placesSheet').innerHTML = `<div class="panel places-panel" role="dialog" aria-modal="true" aria-label="Places"><div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="xbtn" data-close aria-label="Close">${ui('close')}</button></div>${placesPanel('sheet')}</div>`;
 }
 
 function barHTML() {
@@ -1532,7 +1802,7 @@ function renderMain() {
       <div class="stack">${dailyCard(m)}${radarCard(m)}</div>
       <div class="stack"><div class="tiles">${tiles(m)}</div>${afdCard(m)}</div>
       ${sourcesCard(m)}
-    </div>${aboutHTML(' about-main')}<div class="foot">Gridpoint · NOAA data, no account, no ads</div>`;
+    </div>${aboutHTML(' about-main')}<div class="foot">Gridpoint · NOAA data, no account, no ads · <button class="footlink" data-bug>Report a bug</button></div>`;
 }
 function stationLabel(s) {
   if (!s) return '';
@@ -2321,26 +2591,94 @@ function select(id) {
 function addPlace(r) {
   const id = (r.name + '-' + r.region).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + r.lat.toFixed(2) + ',' + r.lon.toFixed(2);
   if (!state.places.some(p => p.id === id)) { state.places.push({ id, name: r.name, region: r.region, lat: +r.lat.toFixed(4), lon: +r.lon.toFixed(4) }); store.set('places', state.places); }
-  state.results = null; state.query = '';
+  state.results = null; state.query = ''; state.hl = -1; ++searchSeq; clearTimeout(remoteTimer);
+  if (document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('q-')) document.activeElement.blur();
   select(id);
 }
-let searchTimer = 0, searchSeq = 0;
+/* search: results on every keystroke from the built-in list; the geocoder only for what it lacks */
+let searchSeq = 0, remoteTimer = 0;
+const renderSearch = () => { renderSidebar(); if (!$('placesSheet').hidden) renderPlacesSheet(); };
+const nearPoint = () => { const p = state.places.find(x => x.id === 'here') || selectedPlace(); return p && isNum(p.lat) ? { lat: p.lat, lon: p.lon } : null; };
+async function runSearch(value) {
+  const seq = ++searchSeq, q = value.trim();
+  state.query = value; state.hl = -1;
+  clearTimeout(remoteTimer);
+  if (!q) { state.results = null; state.searchBusy = false; renderSearch(); return; }
+  if (/^\d+$/.test(q)) {
+    if (q.length < 3) { state.results = []; renderSearch(); return; }
+    state.searchBusy = !zipChunks[q[0]];
+    if (state.searchBusy) renderSearch();
+    let rows = null;
+    try { rows = await loadZips(q[0]); } catch (e) {}
+    const idx = await loadPlaceIndex().catch(() => null);
+    if (seq !== searchSeq) return;
+    state.searchBusy = false;
+    state.results = rows ? zipSearch(idx, rows, q) : await remoteSearch(q).catch(() => []);
+    if (seq === searchSeq) renderSearch();
+    return;
+  }
+  let idx = placeIndex;
+  if (!idx) {
+    state.searchBusy = true; renderSearch();
+    idx = await loadPlaceIndex().catch(() => null);
+    if (seq !== searchSeq) return;
+    state.searchBusy = false;
+  }
+  state.results = idx ? searchIndex(idx, q, nearPoint()) : [];
+  renderSearch();
+  if ((!idx || state.results.length < 5) && normName(q).length >= 3 && !isOffline()) {
+    remoteTimer = setTimeout(async () => {
+      let extra = [];
+      try { extra = await remoteSearch(q); } catch (e) { return; }
+      if (seq !== searchSeq) return;
+      const have = state.results || [];
+      const add = extra.filter(x => !have.some(h => normName(h.name) === normName(x.name) && h.region === x.region && kmBetween(h.lat, h.lon, x.lat, x.lon) < 15));
+      if (add.length) { state.results = have.concat(add).slice(0, 15); renderSearch(); }
+    }, 350);
+  }
+}
 document.addEventListener('input', e => {
   const t = e.target;
-  if (!t.id || !t.id.startsWith('q-')) return;
-  state.query = t.value;
-  clearTimeout(searchTimer);
-  if (t.value.trim().length < 2) { state.results = null; renderSidebar(); if (!$('placesSheet').hidden) renderPlacesSheet(); return; }
-  searchTimer = setTimeout(async () => {
-    const seq = ++searchSeq;
-    try { const r = await searchPlaces(t.value); if (seq === searchSeq) state.results = r; }
-    catch (err) { if (seq === searchSeq) state.results = []; }
-    renderSidebar(); if (!$('placesSheet').hidden) renderPlacesSheet();
-  }, 260);
+  if (t.id && t.id.startsWith('q-')) runSearch(t.value);
 });
+/* load the place list as soon as someone reaches for the search box */
+document.addEventListener('focusin', e => { if (e.target.id && e.target.id.startsWith('q-')) loadPlaceIndex().catch(() => {}); });
+document.addEventListener('pointerover', e => {
+  const b = e.target.closest && e.target.closest('.res[data-result]');
+  if (!b || +b.dataset.result === state.hl) return;
+  state.hl = +b.dataset.result;
+  for (const x of document.querySelectorAll('.res[data-result]')) { const on = +x.dataset.result === state.hl; x.classList.toggle('hl', on); x.setAttribute('aria-selected', on); }
+});
+function searchKeys(e) {
+  const t = e.target;
+  if (!t || !t.id || !t.id.startsWith('q-')) return false;
+  const rs = state.results || [];
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && rs.length) {
+    e.preventDefault();
+    state.hl = state.hl < 0 ? (e.key === 'ArrowDown' ? 0 : rs.length - 1) : (state.hl + (e.key === 'ArrowDown' ? 1 : -1) + rs.length) % rs.length;
+    renderSearch();
+    const row = $(`res-${t.id.slice(2)}-${state.hl}`);
+    if (row) row.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (rs.length) addPlace(rs[Math.max(0, Math.min(state.hl, rs.length - 1))]);
+    return true;
+  }
+  if (e.key === 'Escape' && state.query) {
+    e.preventDefault();
+    t.value = '';
+    runSearch('');
+    return true;
+  }
+  return false;
+}
 document.addEventListener('keydown', e => {
+  if (searchKeys(e)) return;
   if (e.key === 'Escape') {
     if (scrub) { endScrub(); return; }
+    if (!$('bugSheet').hidden) { closeBug(); return; }
     if (!$('installSheet').hidden) { closeGuide(); return; }
     if (!$('daySheet').hidden) { state.day = null; $('daySheet').hidden = true; return; }
     if (!$('placesSheet').hidden) { $('placesSheet').hidden = true; return; }
@@ -2356,7 +2694,6 @@ document.addEventListener('keydown', e => {
   if (!$('daySheet').hidden && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !(e.target && e.target.tagName === 'INPUT')) {
     stepDay(e.key === 'ArrowLeft' ? -1 : 1);
   }
-  if (e.key === 'Enter' && e.target && e.target.id && e.target.id.startsWith('q-') && state.results && state.results[0]) addPlace(state.results[0]);
 });
 function stepDay(n) {
   const m = viewModel(state.models[state.selected]); if (!m) return;
@@ -2368,8 +2705,13 @@ document.addEventListener('click', e => {
   if (e.target === $('daySheet')) { state.day = null; $('daySheet').hidden = true; return; }
   if (e.target === $('placesSheet')) { $('placesSheet').hidden = true; return; }
   if (e.target === $('installSheet')) { closeGuide(); return; }
+  if (e.target === $('bugSheet')) { closeBug(); return; }
   if (!el) return;
   const d = el.dataset;
+  if ('bug' in d) { openBug(); return; }
+  if ('closeBug' in d) { closeBug(); return; }
+  if ('bugSend' in d) { sendBug(); return; }
+  if ('bugCopy' in d) { copyBug(el); return; }
   if ('install' in d) { openGuide(); return; }
   if ('installGo' in d) { promptInstall(); return; }
   if ('closeGuide' in d) { closeGuide(); return; }
@@ -2425,12 +2767,12 @@ daySheetEl.addEventListener('pointercancel', () => endScrub());
 daySheetEl.addEventListener('focusout', e => { if (e.target && e.target.classList && e.target.classList.contains('chartbox')) endScrub(); });
 /* while a sheet is open, the page behind it stays put */
 const lockPage = () => {
-  const open = !$('daySheet').hidden || !$('placesSheet').hidden || !$('installSheet').hidden;
+  const open = ['daySheet', 'placesSheet', 'installSheet', 'bugSheet'].some(id => !$(id).hidden);
   document.documentElement.classList.toggle('locked', open);
   if (!open) endScrub();
 };
 const lockObs = new MutationObserver(lockPage);
-for (const id of ['daySheet', 'placesSheet', 'installSheet']) lockObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
+for (const id of ['daySheet', 'placesSheet', 'installSheet', 'bugSheet']) lockObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
 let resizeT = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!$('daySheet').hidden) renderDaySheet(); }, 150); });
 function maybeRefresh() {
