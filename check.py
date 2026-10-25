@@ -18,6 +18,7 @@ Usage:
   python3 tests/check.py --quick      # a 7-place sample
   python3 tests/check.py --only "Phoenix,Honolulu"
   python3 tests/check.py --json results.json
+  python3 tests/check.py --url https://gridpoint.emersonxia.lol/   # test the live site
 
 Needs: pip install playwright astral ephem   (and Playwright's Chromium)
 Exit code 1 if anything FAILs; WARN lines are worth a look but can be timing (a new
@@ -726,6 +727,7 @@ async def main():
     ap.add_argument('--only')
     ap.add_argument('--json')
     ap.add_argument('--root', default=ROOT)
+    ap.add_argument('--url', help='test a live copy instead of the local files, e.g. https://gridpoint.emersonxia.lol/')
     ap.add_argument('--concurrency', type=int, default=3)
     args = ap.parse_args()
     places = PLACES
@@ -735,10 +737,14 @@ async def main():
         want = {s.strip().lower() for s in args.only.split(',')}
         places = [p for p in PLACES if p[0].lower() in want]
 
-    handler = functools.partial(Quiet, directory=args.root)
-    srv = socketserver.ThreadingTCPServer(('127.0.0.1', 0), handler)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    base = f'http://127.0.0.1:{srv.server_address[1]}/index.html'
+    srv = None
+    if args.url:
+        base = args.url
+    else:
+        handler = functools.partial(Quiet, directory=args.root)
+        srv = socketserver.ThreadingTCPServer(('127.0.0.1', 0), handler)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = f'http://127.0.0.1:{srv.server_address[1]}/index.html'
 
     from playwright.async_api import async_playwright
     async with async_playwright() as p:
@@ -754,7 +760,8 @@ async def main():
             await check_alerts(browser, base, results)
             await check_offline(browser, base, results)
         await browser.close()
-    srv.shutdown()
+    if srv:
+        srv.shutdown()
 
     order = {pl[0] + ', ' + pl[1]: i for i, pl in enumerate(PLACES)}
     results.sort(key=lambda r: order.get(r['place'], 900 + len(r['place'])))

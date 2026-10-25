@@ -995,7 +995,7 @@ function buildModel(place, pt, r, ob) {
   const fc = settled(r.fc), hr = settled(r.hr), grid = settled(r.grid), nbm = settled(r.nbm), alerts = settled(r.alerts) || [];
   if (!fc) notices.push("weather.gov's 7-day forecast didn't load this time.");
   if (!hr) notices.push("weather.gov's hourly forecast didn't load this time, so hourly numbers come from NOAA's model guidance.");
-  if (!nbm) notices.push("The extended outlook didn't load this time, so the forecast stops at 7 days.");
+  if (!nbm && !r.extPending) notices.push("The extended outlook didn't load this time, so the forecast stops at 7 days.");
   const g = grid && grid.properties;
   const gm = {
     feels: expand(g && g.apparentTemperature, cToF), gust: expand(g && g.windGust, kmhToMph), sky: expand(g && g.skyCover),
@@ -1182,13 +1182,26 @@ function loadPlace(place, { force = false } = {}) {
         if (p.t > last + 60e3 && isNum(p.tempF)) hist.push(p);
         return { ...ob, hist };
       })().catch(() => null);
-      const [fc, hr, grid, alerts, nbm, office, ob, afd] = await Promise.allSettled([
-        nws(pt.forecast), nws(pt.hourly), nws(pt.grid, { timeout: 25000 }), getAlerts(place), extP, getOffice(pt.office), obP, getDiscussion(pt.office),
+      const asSettled = pr => pr.then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+      const extS = asSettled(extP);
+      const core = Promise.allSettled([
+        nws(pt.forecast), nws(pt.hourly), nws(pt.grid, { timeout: 25000 }), getAlerts(place), getOffice(pt.office), obP, getDiscussion(pt.office),
       ]);
-      const model = buildModel(place, pt, { fc, hr, grid, alerts, nbm, office, afd }, settled(ob));
+      /* the official forecast shows as soon as it's in; days 8–11 get a moment to join, then fill in when they arrive */
+      const nbm = await Promise.race([extS, core.then(() => sleep(1500)).then(() => null)]);
+      const [fc, hr, grid, alerts, office, ob, afd] = await core;
+      const build = n => buildModel(place, pt, { fc, hr, grid, alerts, nbm: n, office, afd, extPending: n === null }, settled(ob));
+      let model = build(nbm);
       if (!model.hourly.length && !model.daily.length) throw Object.assign(new Error('empty'), { kind: 'empty' });
       state.models[place.id] = model;
       store.set('model:' + place.id, model);
+      if (nbm === null) extS.then(n => {
+        if (state.models[place.id] !== model) return;
+        model = build(n);
+        state.models[place.id] = model;
+        store.set('model:' + place.id, model);
+        render();
+      });
     } catch (e) {
       state.errors[place.id] = e && e.status === 404 ? 'outside' : 'network';
     } finally {
