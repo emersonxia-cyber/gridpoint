@@ -354,6 +354,49 @@ html.locked, html.locked body { overflow: hidden; }
 .iconrow .wi { width: 20px; height: 20px; }
 .note { margin-top: 6px; font-size: 12.5px; color: var(--fg3); line-height: 1.45; }
 .note.body { font-size: 14px; color: var(--fg); }
+
+/* Home Screen guide: the tip on phones, the button under About, and the guide sheet */
+.glyph { display: inline-block; width: 19px; height: 19px; vertical-align: -4px; color: #64c8ff; }
+.kbd { display: inline-block; min-width: 24px; padding: 0 5px; border: 1px solid rgba(255,255,255,0.38); font: 700 12px/18px var(--font); text-align: center; vertical-align: 1px; color: #64c8ff; }
+.tip { display: flex; align-items: center; gap: 10px; padding: 9px 8px 9px 14px; background: var(--card-strong); border: 1px solid var(--card-line); -webkit-backdrop-filter: blur(26px) saturate(150%); backdrop-filter: blur(26px) saturate(150%); font-size: 13.5px; line-height: 1.35; }
+.tip-text { flex: 1; min-width: 0; text-wrap: pretty; }
+.tip-text b { font-weight: 700; }
+.tip-btn { flex: none; height: 32px; padding: 0 13px; background: #fff; color: #182437; font-size: 13.5px; font-weight: 700; }
+.tip-x { flex: none; width: 30px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--fg2); }
+.tip-x svg { width: 12px; height: 12px; }
+.about-install { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 14px; padding: 10px 12px; text-align: left; background: rgba(255,255,255,0.12); color: var(--fg); font-size: 13.5px; font-weight: 500; line-height: 1.3; }
+.about-install:hover { background: rgba(255,255,255,0.18); }
+.about-install .glyph { flex: none; }
+.about-install .arr { margin-left: auto; color: var(--fg2); font-size: 17px; line-height: 1; }
+.install-panel { width: min(560px, 100%); padding: 16px 20px 22px; outline: none; }
+.ig-top { display: flex; align-items: flex-start; gap: 14px; }
+.ig-icon { flex: none; width: 54px; height: 54px; display: block; background: #2662b3; }
+.ig-title { flex: 1; min-width: 0; margin: 3px 0 0; font: 700 24px/1.15 var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+.ig-lead { margin: 12px 0 0; font-size: 15px; line-height: 1.45; text-wrap: pretty; }
+.btn1 { display: block; width: 100%; min-height: 46px; margin-top: 16px; padding: 0 14px; background: #fff; color: #182437; font-size: 15.5px; font-weight: 700; }
+.btn1:hover { background: rgba(255,255,255,0.88); }
+.btn2 { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 14px; background: rgba(255,255,255,0.12); font-size: 14px; font-weight: 500; }
+.btn2:hover { background: rgba(255,255,255,0.18); }
+.btn2 .glyph { color: var(--fg); }
+.ig-sec { margin-top: 22px; }
+.ig-h { margin: 0 0 4px; font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--fg2); }
+.ig-sec > p { margin: 6px 0 0; font-size: 14.5px; line-height: 1.45; text-wrap: pretty; }
+.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; padding: 11px 0; border-top: 1px solid var(--hair); font-size: 15px; line-height: 1.45; }
+.steps li:first-child { border-top: 0; }
+.steps li::before { content: counter(step); font: 500 22px/1.05 var(--font-display); color: var(--fg2); }
+.steps b { font-weight: 700; }
+.ig-done { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 11px 13px; background: rgba(255,255,255,0.10); font-size: 14.5px; }
+.ig-more { margin-top: 8px; border-bottom: 1px solid var(--hair); }
+.ig-more details { border-top: 1px solid var(--hair); }
+.ig-more summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; font-size: 15px; font-weight: 500; cursor: pointer; list-style: none; }
+.ig-more summary::-webkit-details-marker { display: none; }
+.ig-more summary::after { content: '+'; color: var(--fg2); font-size: 20px; font-weight: 400; line-height: 1; }
+.ig-more details[open] summary::after { content: '–'; }
+.ig-more details > div { padding: 0 0 12px; }
+.install-panel .note { color: var(--fg2); font-size: 13.5px; }
+.ig-share { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 22px; }
+.ig-url { font-size: 13px; color: var(--fg2); }
 </style>
 </head>
 <body>
@@ -365,6 +408,7 @@ html.locked, html.locked body { overflow: hidden; }
 </div>
 <div class="sheet" id="daySheet" hidden></div>
 <div class="sheet" id="placesSheet" hidden></div>
+<div class="sheet" id="installSheet" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="icondefs"></defs></svg>
 
 <script>
@@ -1264,9 +1308,153 @@ function aboutHTML(extra = '') {
       <li><b>Honest about the long range.</b> Days 8–11 come straight from NOAA’s model guidance and are labeled, since no forecaster has reviewed them yet.</li>
       <li><b>No ads, no tracking, no account.</b></li>
     </ul>
+    ${isStandalone() || justInstalled ? '' : `<button class="about-install" data-install>${GL.add}<span>${esc(installLabel())}</span><span class="arr" aria-hidden="true">›</span></button>`}
     <p class="about-fine">U.S. locations only. Data from NOAA and the National Weather Service, the Iowa Environmental Mesonet, and Open-Meteo.</p>
   </section>`;
 }
+
+/* ============================== Home Screen guide ==============================
+   Gridpoint installs from the browser: no App Store, no developer account. The guide is part of the
+   app (not a separate page), so it works offline, and the address stays the app's own while someone
+   follows it, which is the address the Home Screen icon will open. gridpoint…/install and /#install
+   open it directly. */
+const UA = navigator.userAgent || '';
+const IS_IPAD = /iPad/.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+const IS_IOS = IS_IPAD || /iPhone|iPod/.test(UA);
+const IS_ANDROID = /Android/.test(UA);
+const IOS_OTHER = IS_IOS && /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|DuckDuckGo|GSA\//.test(UA);
+const IS_SAFARI = /Safari\//.test(UA) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\/|OPR\/|Firefox|Android/.test(UA);
+const IS_FIREFOX = /Firefox\//.test(UA);
+function deviceKind() {
+  if (IS_IOS) return IOS_OTHER ? 'ios-other' : 'ios';
+  if (IS_ANDROID) return 'android';
+  if (/Macintosh/.test(UA) && IS_SAFARI) return 'mac';
+  if (IS_FIREFOX) return 'firefox';
+  return 'desktop';
+}
+const isStandalone = () => navigator.standalone === true ||
+  ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'].some(m => window.matchMedia && matchMedia(`(display-mode: ${m})`).matches);
+function installLabel() {
+  const k = deviceKind();
+  return k === 'mac' ? 'Add Gridpoint to your Dock' : k === 'desktop' || k === 'firefox' ? 'Install Gridpoint as an app' : 'Add Gridpoint to your Home Screen';
+}
+const GL = {
+  share: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M8 7.5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 10.5H5.5v10h13v-10h-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+  add: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+  install: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 20.5h8M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+const KB = s => `<span class="kbd" aria-hidden="true">${s}</span>`;
+let installEvt = null, justInstalled = false;
+
+function stepsFor(k, here) {
+  const host = esc(location.host || 'this site');
+  const ol = items => `<ol class="steps">${items.map(s => `<li><span>${s}</span></li>`).join('')}</ol>`;
+  const note = s => `<p class="note">${s}</p>`;
+  if (k === 'ios') return ol([
+    `Tap <b>Share</b> ${GL.share}. If you don’t see it, tap ${KB('•••')} next to the address bar first.`,
+    `Tap <b>Add to Home Screen</b> ${GL.add}. You may need to scroll down the list to find it.`,
+    `If you see <b>Open as Web App</b>, leave it on. Then tap <b>Add</b>.`,
+  ]) + (here ? '' : note(`Using Chrome, Firefox or Edge on an iPhone? Tap <b>Share</b> (in Chrome it’s in the address bar; in Firefox and Edge it’s in the menu), then <b>Add to Home Screen</b>.`));
+  if (k === 'ios-other') return ol([
+    `Tap <b>Share</b> ${GL.share}. In Chrome it’s in the address bar. In Firefox and Edge, open the menu first.`,
+    `Tap <b>Add to Home Screen</b> ${GL.add}, then <b>Add</b>.`,
+  ]) + note(`Not there? Open ${host} in Safari and add it from there.`);
+  if (k === 'android') return ol([
+    `In Chrome, tap ${KB('⋮')} at the top right.`,
+    `Tap <b>Add to home screen</b>, or <b>Install app</b> if that’s what you see.`,
+    `Choose <b>Install</b>, then confirm.`,
+  ]) + note(`In Samsung Internet, Firefox or Edge, look for <b>Install</b> or <b>Add to Home screen</b> in the browser’s menu.`);
+  if (k === 'mac') return ol([
+    `In Safari’s menu bar, choose <b>File</b> → <b>Add to Dock</b>. Or click <b>Share</b> ${GL.share} and choose <b>Add to Dock</b>.`,
+    `Click <b>Add</b>. Gridpoint appears in your Dock and in your Applications folder.`,
+  ]) + note(`Needs macOS Sonoma or later. In Chrome or Edge on a Mac, follow the steps for those browsers.`);
+  if (k === 'firefox') return `<p>Firefox doesn’t install websites as apps on most computers yet. Gridpoint still works offline in a Firefox tab once you’ve opened it, so a bookmark works well. For an app icon, open ${host} in Chrome, Edge or Safari.</p>`;
+  return ol([
+    `Click the install icon ${GL.install} at the right end of the address bar.`,
+    `Click <b>Install</b>. Gridpoint opens in its own window, with an icon like any other app.`,
+  ]) + note(`No icon? In Chrome, open ${KB('⋮')} → <b>Cast, save and share</b> → <b>Install page as app</b>. In Edge, open ${KB('…')} → <b>Apps</b> → <b>Install this site as an app</b>.`);
+}
+function guideHTML() {
+  const k = deviceKind(), installed = isStandalone() || justInstalled;
+  const mobile = k === 'ios' || k === 'ios-other' || k === 'android';
+  const title = installed ? 'Gridpoint is on this device' : mobile ? 'Add Gridpoint to your Home Screen' : k === 'mac' ? 'Add Gridpoint to your Dock' : 'Install Gridpoint as an app';
+  const lead = installed
+    ? (isStandalone() ? 'You’re using the installed app. It works offline and updates itself.' : `Done. Open Gridpoint from your ${mobile ? 'Home Screen' : 'apps'} from now on.`)
+    : mobile ? 'It opens full screen like any other app, one tap from your Home Screen, and it works without a connection. Nothing to download from an app store, and no account.'
+    : 'It opens in its own window like any other app, and it works without a connection. Nothing to download from an app store, and no account.';
+  const here = { ios: IS_IPAD ? 'On this iPad' : 'On this iPhone', 'ios-other': IS_IPAD ? 'On this iPad' : 'On this iPhone', android: 'On this phone', mac: 'On this Mac', firefox: 'In Firefox', desktop: 'On this computer' }[k];
+  const own = k === 'ios-other' ? 'ios' : k === 'firefox' ? 'desktop' : k;
+  const others = [['ios', 'iPhone and iPad'], ['android', 'Android phones and tablets'], ['mac', 'Mac (Safari)'], ['desktop', 'Chrome or Edge on a computer']].filter(([key]) => key !== own || installed);
+  const separate = !installed && (k === 'ios' || k === 'ios-other' || k === 'mac');
+  const icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href;
+  return `<div class="panel install-panel" role="dialog" aria-modal="true" aria-labelledby="ig-title" tabindex="-1">
+    <div class="ig-top">${icon ? `<img class="ig-icon" src="${esc(icon)}" alt="">` : ''}<h2 class="ig-title" id="ig-title">${esc(title)}</h2><button class="xbtn" data-close-guide aria-label="Close">${ui('close')}</button></div>
+    <p class="ig-lead">${esc(lead)}</p>
+    ${!installed && installEvt ? `<button class="btn1" data-install-go>Install Gridpoint</button>` : ''}
+    ${installed ? '' : `<section class="ig-sec"><h3 class="ig-h">${esc(here)}</h3>${stepsFor(k, true)}</section>`}
+    <section class="ig-sec"><h3 class="ig-h">Works offline</h3>
+      <p>Once you’ve opened Gridpoint with a connection, the app is saved on this device. With no connection it still opens and shows the last forecast saved for each of your places, with the time it was saved. Radar and fresh readings come back when you’re online.</p>
+      ${separate ? `<p class="note">The ${k === 'mac' ? 'Dock' : 'Home Screen'} app keeps its own list of places, separate from ${k === 'ios-other' ? 'your browser' : 'Safari'}, so add your places again there. It also keeps its saved forecasts, which Safari can clear from a website you haven’t opened in a while.</p>` : ''}
+    </section>
+    <section class="ig-sec"><h3 class="ig-h">${installed ? 'Add it to another device' : 'Other devices'}</h3>
+      <div class="ig-more">${others.map(([key, label]) => `<details><summary>${esc(label)}</summary><div>${stepsFor(key, false)}</div></details>`).join('')}</div>
+    </section>
+    <div class="ig-share"><button class="btn2" data-share-app>${GL.share}<span class="lbl">Share Gridpoint</span></button><span class="ig-url">${esc(((location.host || '') + appPath()).replace(/\/$/, ''))}</span></div>
+  </div>`;
+}
+const appPath = () => location.pathname.replace(/(index\.html|install(\.html)?)$/i, '');
+function renderInstallSheet() { $('installSheet').innerHTML = guideHTML(); }
+function openGuide() {
+  store.set('tipDone', true);
+  renderInstallSheet();
+  $('installSheet').hidden = false;
+  const p = $('installSheet').querySelector('.panel');
+  if (p) { p.scrollTop = 0; try { p.focus({ preventScroll: true }); } catch (e) {} }
+  renderMain();
+}
+function closeGuide() { $('installSheet').hidden = true; }
+const showTip = () => (IS_IOS || IS_ANDROID) && !isStandalone() && !justInstalled && !store.get('tipDone') && !isOffline();
+function tipHTML() {
+  if (!showTip()) return '';
+  return `<div class="tip span2" role="note"><div class="tip-text"><b>Add Gridpoint to your Home Screen.</b> It opens like an app and works offline.</div>${installEvt
+    ? '<button class="tip-btn" data-install-go>Install</button>'
+    : '<button class="tip-btn" data-install>Show me</button>'}<button class="tip-x" data-tip-x aria-label="Don’t show this again">${ui('close')}</button></div>`;
+}
+async function promptInstall() {
+  const e = installEvt;
+  if (!e) { openGuide(); return; }
+  installEvt = null;
+  try {
+    await e.prompt();
+    const choice = await e.userChoice;
+    if (choice && choice.outcome === 'accepted') { justInstalled = true; store.set('tipDone', true); }
+  } catch (err) { openGuide(); return; }
+  refreshInstallUI();
+}
+function refreshInstallUI() {
+  renderMain(); renderSidebar();
+  if (!$('placesSheet').hidden) renderPlacesSheet();
+  if (!$('installSheet').hidden) renderInstallSheet();
+}
+async function shareApp(btn) {
+  const url = new URL(appPath() || '/', location.href).href;
+  const lbl = btn.querySelector('.lbl');
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Gridpoint', text: 'The official National Weather Service forecast for your exact spot, with live station readings.', url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); if (lbl) lbl.textContent = 'Link copied'; }
+  catch (e) { if (lbl) lbl.textContent = url; }
+}
+const wantsGuide = () => /^#install$/i.test(location.hash) || /\/install(\.html)?$/i.test(location.pathname);
+function routeGuide() {
+  if (!wantsGuide()) return;
+  try { history.replaceState(null, '', appPath() + location.search); } catch (e) {}
+  openGuide();
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; refreshInstallUI(); });
+window.addEventListener('appinstalled', () => { installEvt = null; justInstalled = true; store.set('tipDone', true); refreshInstallUI(); });
+window.addEventListener('hashchange', routeGuide);
 function renderSidebar() {
   const sb = $('sidebar');
   const active = document.activeElement && document.activeElement.id === 'q-side';
@@ -1339,6 +1527,7 @@ function renderMain() {
   main.innerHTML = `<div class="bar">${barHTML()}</div>${hero}<div class="content">
       ${saved}${m.alerts.map(alertCard).join('')}
       ${m.notices.map(n => `<div class="notice span2">${esc(n)}</div>`).join('')}
+      ${tipHTML()}
       ${hourlyCard(m)}
       <div class="stack">${dailyCard(m)}${radarCard(m)}</div>
       <div class="stack"><div class="tiles">${tiles(m)}</div>${afdCard(m)}</div>
@@ -1517,12 +1706,20 @@ function moonDisc(p, size) {
   }
   return `<svg viewBox="0 0 52 52" width="${size}" height="${size}" aria-hidden="true" style="flex:none"><circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(10,16,28,.75)" stroke="rgba(255,255,255,.18)"/>${lit ? `<path d="${lit}" fill="#EEF2F7"/>` : ''}</svg>`;
 }
+/* the radar image failed: say why (no connection, or the NWS image itself isn't loading) */
+window.gpRadarFail = img => {
+  const card = img.closest('.radar');
+  if (!card) return;
+  card.classList.add('noimg');
+  const msg = card.querySelector('.offmsg');
+  if (msg && navigator.onLine !== false) msg.textContent = 'The radar loop isn’t loading from weather.gov right now. Try the interactive radar, or check back in a few minutes.';
+};
 function radarCard(m) {
   const id = m.place.radar;
   if (!id) return '';
   const bust = Math.floor(Date.now() / (5 * 60e3));
   return `<section class="card radar${isOffline() ? ' noimg' : ''}"><div class="card-h">${ui('radar')} Radar · ${esc(id)}<span class="right"><a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener">Interactive ↗</a></span></div>
-    <a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener"><img src="https://radar.weather.gov/ridge/standard/${esc(id)}_loop.gif?t=${bust}" alt="Radar loop from ${esc(id)}" loading="lazy" onerror="this.closest('.radar').classList.add('noimg')"></a>
+    <a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener"><img src="https://radar.weather.gov/ridge/standard/${esc(id)}_loop.gif?t=${bust}" alt="Radar loop from ${esc(id)}" loading="lazy" onerror="gpRadarFail(this)"></a>
     <div class="offmsg">The radar loop needs a connection. It’ll load when you’re back online.</div>
     <div class="cap">Base reflectivity loop from the NWS ${esc(id)} radar.</div></section>`;
 }
@@ -2144,6 +2341,7 @@ document.addEventListener('input', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (scrub) { endScrub(); return; }
+    if (!$('installSheet').hidden) { closeGuide(); return; }
     if (!$('daySheet').hidden) { state.day = null; $('daySheet').hidden = true; return; }
     if (!$('placesSheet').hidden) { $('placesSheet').hidden = true; return; }
   }
@@ -2169,8 +2367,14 @@ document.addEventListener('click', e => {
   const el = e.target.closest('button, [data-close]');
   if (e.target === $('daySheet')) { state.day = null; $('daySheet').hidden = true; return; }
   if (e.target === $('placesSheet')) { $('placesSheet').hidden = true; return; }
+  if (e.target === $('installSheet')) { closeGuide(); return; }
   if (!el) return;
   const d = el.dataset;
+  if ('install' in d) { openGuide(); return; }
+  if ('installGo' in d) { promptInstall(); return; }
+  if ('closeGuide' in d) { closeGuide(); return; }
+  if ('tipX' in d) { store.set('tipDone', true); renderMain(); return; }
+  if ('shareApp' in d) { shareApp(el); return; }
   if (d.del) {
     state.places = state.places.filter(p => p.id !== d.del); store.set('places', state.places); store.del('model:' + d.del); store.del('ext:' + d.del);
     if (state.selected === d.del) state.selected = state.places[0].id;
@@ -2221,13 +2425,12 @@ daySheetEl.addEventListener('pointercancel', () => endScrub());
 daySheetEl.addEventListener('focusout', e => { if (e.target && e.target.classList && e.target.classList.contains('chartbox')) endScrub(); });
 /* while a sheet is open, the page behind it stays put */
 const lockPage = () => {
-  const open = !$('daySheet').hidden || !$('placesSheet').hidden;
+  const open = !$('daySheet').hidden || !$('placesSheet').hidden || !$('installSheet').hidden;
   document.documentElement.classList.toggle('locked', open);
   if (!open) endScrub();
 };
 const lockObs = new MutationObserver(lockPage);
-lockObs.observe($('daySheet'), { attributes: true, attributeFilter: ['hidden'] });
-lockObs.observe($('placesSheet'), { attributes: true, attributeFilter: ['hidden'] });
+for (const id of ['daySheet', 'placesSheet', 'installSheet']) lockObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
 let resizeT = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!$('daySheet').hidden) renderDaySheet(); }, 150); });
 function maybeRefresh() {
@@ -2242,9 +2445,11 @@ setInterval(() => { maybeRefresh(); const m = state.models[state.selected]; if (
 
 render();
 loadAll();
+routeGuide();
 
-/* When served from a web address (your own computer, Netlify...), save the app on the device
-   so the home-screen icon still opens if that computer is asleep. Skipped when opened as a file. */
+/* When served from a web address, save the app on the device (service worker) so it opens
+   with no connection, and offer the manifest so it can be added to a Home Screen or Dock.
+   Skipped when the file is opened directly from a disk. */
 if (/^https?:$/.test(location.protocol)) {
   const link = document.createElement('link');
   link.rel = 'manifest'; link.href = 'manifest.json';

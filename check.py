@@ -27,7 +27,9 @@ station report arriving between the app's fetch and this script's).
 import argparse, asyncio, datetime as dt, functools, http.server, json, math, os, re, socketserver, sys, threading, time, urllib.request
 from zoneinfo import ZoneInfo
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+# the app's folder: next to this script (as in the repo), or one up (tests/check.py)
+ROOT = HERE if os.path.exists(os.path.join(HERE, 'index.html')) else os.path.dirname(HERE)
 UA = {'User-Agent': '(Gridpoint check, https://github.com/)', 'Accept': 'application/geo+json'}
 HOUR = 3600
 
@@ -716,6 +718,164 @@ async def check_offline(browser, base, results):
     await ctx.close()
 
 
+async def check_install(browser, base, results, pw):
+    """The Home Screen guide: the tip on phones, the guide for each kind of device, its addresses
+    (/install and #install), the one-tap Install button where the browser offers one, the installed
+    state, and that the service worker leaves other pages on the site alone."""
+    res = {'place': 'Home Screen guide', 'fail': [], 'warn': [], 'info': []}
+    results.append(res)
+    root = base[:base.rfind('/') + 1]
+    seed = "if (!localStorage.getItem('gp:places')) { localStorage.setItem('gp:places', JSON.stringify([{id:'northfield-mn', name:'Northfield', region:'MN', lat:44.4620, lon:-93.1830}])); }"
+    loaded = "document.querySelector('.hero-temp') && document.querySelector('.hero-temp').textContent.trim() !== '--'"
+    guide = "(() => { const s = document.getElementById('installSheet'); if (!s || s.hidden) return null; return { title: s.querySelector('.ig-title').textContent, here: (s.querySelector('.ig-h') || {}).textContent, steps: s.querySelectorAll('.ig-sec .steps')[0] ? s.querySelectorAll('.ig-sec .steps')[0].children.length : 0, text: s.innerText, others: s.querySelectorAll('details').length, go: !!s.querySelector('[data-install-go]'), locked: document.documentElement.classList.contains('locked'), url: location.pathname + location.search + location.hash }; })()"
+
+    async def ctx_for(device=None, init=''):
+        opts = dict(pw.devices[device]) if device else {'viewport': {'width': 1280, 'height': 900}}
+        opts.pop('default_browser_type', None)
+        ctx = await browser.new_context(**opts)
+        await ctx.add_init_script(seed + init)
+        return ctx
+
+    # iPhone, Safari
+    ctx = await ctx_for('iPhone 13')
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        tip = await page.evaluate("(() => { const t = document.querySelector('.tip'); return t && { text: t.innerText, how: !!t.querySelector('[data-install]') }; })()")
+        if not tip or 'Home Screen' not in tip['text'] or not tip['how']:
+            res['fail'].append(f'iPhone: no Home Screen tip ({tip})')
+        else:
+            await page.click('.tip [data-install]')
+            g = await page.evaluate(guide)
+            probs = []
+            if not g:
+                probs.append("guide didn't open from the tip")
+            else:
+                if g['title'] != 'Add Gridpoint to your Home Screen': probs.append(f"title {g['title']!r}")
+                if g['here'] != 'On this iPhone': probs.append(f"section {g['here']!r}")
+                if g['steps'] != 3 or 'Add to Home Screen' not in g['text'] or 'Open as Web App' not in g['text']: probs.append(f"steps {g['steps']}")
+                if 'separate from Safari' not in g['text']: probs.append('no note about places being kept separately')
+                if not g['locked']: probs.append("page behind the guide isn't locked")
+                if g['others'] != 3: probs.append(f"{g['others']} other-device sections")
+            await page.keyboard.press('Escape')
+            after = await page.evaluate("({ open: !document.getElementById('installSheet').hidden, locked: document.documentElement.classList.contains('locked'), tip: !!document.querySelector('.tip'), about: (document.querySelector('.about-main [data-install]') || {}).textContent || '' })")
+            if after['open'] or after['locked']: probs.append("Escape didn't close the guide")
+            if after['tip']: probs.append('tip still shown after opening the guide')
+            if 'Add Gridpoint to your Home Screen' not in after['about']: probs.append(f"About has no guide button ({after['about']!r})")
+            if probs:
+                res['fail'].append('iPhone: ' + '; '.join(probs))
+            else:
+                res['info'].append('iPhone: tip → guide (3 Safari steps, offline note), Escape closes, tip stays dismissed, About button ✓')
+        # the addresses people share
+        for path in ('#install', 'install.html'):
+            p2 = await ctx.new_page()
+            await p2.goto(base + path if path.startswith('#') else root + path)
+            try:
+                await p2.wait_for_function("!document.getElementById('installSheet').hidden", timeout=30000)
+                g = await p2.evaluate(guide)
+                if 'install' in g['url'].lower():
+                    res['fail'].append(f'{path}: guide opened but the address still reads {g["url"]!r} (the Home Screen icon would open the guide)')
+                else:
+                    res['info'].append(f'{path}: opens the guide, address cleaned to {g["url"]!r} ✓')
+            except Exception as e:
+                res['fail'].append(f"{path}: guide didn't open ({str(e).splitlines()[0]})")
+            await p2.close()
+        # other pages on the site aren't swapped for the app by the service worker
+        p3 = await ctx.new_page()
+        try:
+            await p3.goto(root + 'check.py')
+            hijacked = await p3.evaluate("!!document.querySelector('.hero')")
+            (res['fail'] if hijacked else res['info']).append('check.py: ' + ('the service worker served the app instead' if hijacked else 'loads as itself, not the app ✓'))
+        except Exception as e:
+            res['info'].append('check.py: downloaded rather than shown, not the app ✓')
+        await p3.close()
+    except Exception as e:
+        res['fail'].append(f'iPhone guide check failed: {e}')
+    await ctx.close()
+
+    # already installed (opened from the Home Screen)
+    ctx = await ctx_for('iPhone 13', "Object.defineProperty(navigator, 'standalone', { get: () => true });")
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        st = await page.evaluate("({ tip: !!document.querySelector('.tip'), btn: document.querySelectorAll('[data-install]').length })")
+        await page.goto(base + '#install')
+        await page.wait_for_function("!document.getElementById('installSheet').hidden", timeout=30000)
+        g = await page.evaluate(guide)
+        if st['tip'] or st['btn'] or g['title'] != 'Gridpoint is on this device' or g['others'] != 4:
+            res['fail'].append(f"installed app: tip {st['tip']}, buttons {st['btn']}, guide {g['title']!r}, {g['others']} device sections")
+        else:
+            res['info'].append('installed app: no tip or install button; guide says it’s installed and shows all 4 devices ✓')
+    except Exception as e:
+        res['fail'].append(f'installed-app check failed: {e}')
+    await ctx.close()
+
+    # Android Chrome, where the browser offers one-tap install
+    ctx = await ctx_for('Pixel 7')
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        pre = await page.evaluate("document.querySelector('.tip') && document.querySelector('.tip').innerText")
+        fired = await page.evaluate("""() => { const e = new Event('beforeinstallprompt', { cancelable: true });
+            e.prompt = () => { window.__prompted = (window.__prompted || 0) + 1; return Promise.resolve(); };
+            e.userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
+            window.dispatchEvent(e); return e.defaultPrevented; }""")
+        await page.wait_for_selector('.tip [data-install-go]', timeout=5000)
+        await page.click('.tip [data-install-go]')
+        await page.wait_for_function("!document.querySelector('.tip')", timeout=5000)
+        n = await page.evaluate('window.__prompted || 0')
+        about_btn = await page.evaluate("document.querySelectorAll('[data-install]').length")
+        await page.evaluate("location.hash = 'install'")
+        await page.wait_for_function("!document.getElementById('installSheet').hidden", timeout=10000)
+        g = await page.evaluate(guide)
+        probs = []
+        if not pre or 'Home Screen' not in pre: probs.append(f'no tip before the browser offered install ({pre!r})')
+        if not fired: probs.append("the browser's own install banner wasn't held back")
+        if n != 1: probs.append(f'install prompt shown {n} times')
+        if about_btn: probs.append('About still offers to install after installing')
+        if g['title'] != 'Gridpoint is on this device': probs.append(f"after installing, guide says {g['title']!r}")
+        if probs:
+            res['fail'].append('Android: ' + '; '.join(probs))
+        else:
+            res['info'].append('Android: tip → one-tap Install (browser prompt once), then guide shows it’s installed ✓')
+    except Exception as e:
+        res['fail'].append(f'Android check failed: {e}')
+    await ctx.close()
+
+    # a computer, plus a radar image that won't load
+    ctx = await ctx_for()
+    await ctx.route('**/ridge/**', lambda r: r.abort())
+    page = await ctx.new_page()
+    try:
+        await page.goto(base)
+        await page.wait_for_function(loaded, timeout=120000)
+        tip = await page.evaluate("!!document.querySelector('.tip')")
+        label = await page.evaluate("(document.querySelector('.sidebar [data-install]') || {}).textContent || ''")
+        await page.click('.sidebar [data-install]')
+        g = await page.evaluate(guide)
+        await page.click('[data-close-guide]')
+        closed = await page.evaluate("document.getElementById('installSheet').hidden")
+        await page.evaluate("document.querySelector('.radar') && document.querySelector('.radar').scrollIntoView()")
+        await page.wait_for_function("document.querySelector('.radar.noimg')", timeout=20000)
+        msg = await page.evaluate("document.querySelector('.radar .offmsg').textContent")
+        probs = []
+        if tip: probs.append('phone tip shown on a computer')
+        if 'Install Gridpoint as an app' not in label: probs.append(f'sidebar button {label!r}')
+        if not g or g['here'] != 'On this computer' or g['steps'] != 2: probs.append(f'guide {g and (g["here"], g["steps"])}')
+        if not closed: probs.append("close button didn't close the guide")
+        if 'isn’t loading' not in msg: probs.append(f'radar failure says {msg!r}')
+        if probs:
+            res['fail'].append('Computer: ' + '; '.join(probs))
+        else:
+            res['info'].append('Computer: no tip; sidebar button → guide (2 steps), closes; radar failure explained ✓')
+    except Exception as e:
+        res['fail'].append(f'computer check failed: {e}')
+    await ctx.close()
+
+
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -759,6 +919,8 @@ async def main():
         if not args.only:
             await check_alerts(browser, base, results)
             await check_offline(browser, base, results)
+        if not args.only or 'install' in args.only.lower():
+            await check_install(browser, base, results, p)
         await browser.close()
     if srv:
         srv.shutdown()

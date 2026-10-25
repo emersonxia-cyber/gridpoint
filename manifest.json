@@ -1,14 +1,18 @@
 {
+  "id": "./",
   "name": "Gridpoint",
   "short_name": "Gridpoint",
-  "description": "Forecasts straight from NOAA: live station readings, the official weather.gov forecast, and the National Blend of Models.",
+  "description": "The official National Weather Service forecast for your exact spot, with live station readings and the forecasters' own reasoning. No ads, no tracking, no account.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#1d3557",
   "theme_color": "#24508a",
+  "categories": ["weather"],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

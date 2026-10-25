@@ -28,7 +28,9 @@ Any static host works. Two easy ones:
 
 ## Use it like an app, offline included
 
-Open the site in Safari on an iPhone, tap Share → Add to Home Screen. On a Mac, use Safari's File → Add to Dock. No App Store and no developer account are needed. After the first visit, the app is saved on the device (service worker) along with each place's last forecast, so it opens without a connection and says when it's showing saved data.
+Send people to **/install** (for example `gridpoint.emersonxia.lol/install`). It opens the app with a short guide for their device: iPhone and iPad (Share → Add to Home Screen), Android (one-tap Install where Chrome offers it), Mac (Safari's File → Add to Dock), and Chrome or Edge on a computer. Phones also get a small, dismissible tip on the main screen, and the guide is linked under About. No App Store and no developer account are needed.
+
+After the first visit, the app is saved on the device (service worker) along with each place's last forecast, so it opens without a connection and says when it's showing saved data. The guide is part of the app rather than a separate page, so it works offline too, and the address stays the app's own while someone follows it (that's the address the Home Screen icon opens). On iPhone, iPad and Mac, the installed app keeps its own list of places, separate from Safari; the guide says so.
 
 ## Type
 
@@ -36,13 +38,15 @@ The page asks for Helvetica Now first (Display for large numbers, Text for body,
 
 ## Checking it
 
-`tests/check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, and offline use.
+`check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, offline use, and the Home Screen guide on iPhone, Android and a computer.
 
 ```
 pip install playwright astral ephem
 python3 -m playwright install chromium
-python3 tests/check.py            # all places
-python3 tests/check.py --quick    # 7-place sample
+python3 check.py                  # all places, from the files in this folder
+python3 check.py --quick          # 7-place sample
+python3 check.py --only install   # just the Home Screen guide
+python3 check.py --url https://gridpoint.emersonxia.lol/   # the live site
 ```
 
 WARN lines are worth a look but are often timing: a new station report or forecast can land between the app's request and the check's.
