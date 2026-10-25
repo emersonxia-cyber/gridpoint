@@ -21,6 +21,14 @@ Gridpoint is a single-page web app. There's no server code: each visitor's brows
 
 weather.gov answers from many servers, and for a while after each forecast update some of them still hand out the previous version. Each forecast product says which update it's built from, so if the 7-day, hourly and grid products disagree, Gridpoint asks again for the older ones and keeps the newest.
 
+## Languages
+
+Gridpoint's own words come in 14 languages: English, Español, 简体中文, 繁體中文, Tiếng Việt, Tagalog, 한국어, Français, Português, Deutsch, Italiano, Ελληνικά, 日本語 and Русский. **Automatic** (the default) follows the device's language list and falls back to English; the globe button at the top, or Language under About, picks one by hand. Dates, times and numbers follow the language too.
+
+Each language's words are in `i18n/<code>.json`, keyed by the English text. NWS short forecasts ("Chance Showers And Thunderstorms then Mostly Sunny"), station reports, period names and alert names are translated from their parts: whole phrases (`c:`), weather nouns (`n:`, with a second grammatical case after `|` where a language needs one), the qualifiers around them (`q:`, with `{x}` for the noun), alert kinds and subjects (`at:`, `ap:`), and NWS period names (`pn:`). Wording NWS adds later that isn't covered falls back to the icon's words, so it still shows in the chosen language. The forecast paragraphs, alert details and the forecasters' discussion are written by the National Weather Service in English only, so they stay in English and are marked as English for screen readers.
+
+To change a word, edit it in every `i18n/<code>.json`; to add one, wrap it in `$t('…')` in `index.html` and add it to every file. `check.py --only languages` makes sure every file has every word with its `{placeholders}`, then opens each language on a phone-sized screen.
+
 ## Report a bug
 
 Report a bug (under About, and at the bottom of the page) opens a short form. Gridpoint has no server, so the report goes out from the visitor's own email app: the form fills in a message to swagmasterfive@emersonxia.lol with the subject "Gridpoint bug report: …", plus details that help reproduce the problem (the place and its NWS forecast area and station, browser, screen size, recent script errors). The visitor sees everything before sending and can leave the details out. To file these automatically, add a Mail rule in iCloud (Subject contains "Gridpoint bug report" → move to a "Gridpoint bug reports" folder).
@@ -45,7 +53,7 @@ The page asks for Helvetica Now first (Display for large numbers, Text for body,
 
 ## Checking it
 
-`check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, offline use, and the Home Screen guide on iPhone, Android and a computer, place search, and the bug report form. When weather.gov's servers disagree about the latest forecast, it checks the app against each version they hand out.
+`check.py` loads the app in a headless browser for 27 places across every U.S. time zone (including Alaska, Hawaii and Puerto Rico) and compares what's on screen with the sources, re-derived independently: the station reading and every tile, the hourly strip, each daily high/low/chance, the extended outlook, sunrise/sunset (astral), moon phases (ephem), radar, alerts, metric units, chart scrubbing, the page lock behind sheets, offline use, and the Home Screen guide on iPhone, Android and a computer, place search, the bug report form, and all 14 languages. When weather.gov's servers disagree about the latest forecast, it checks the app against each version they hand out.
 
 ```
 pip install playwright astral ephem
@@ -53,6 +61,7 @@ python3 -m playwright install chromium
 python3 check.py                  # all places, from the files in this folder
 python3 check.py --quick          # 7-place sample
 python3 check.py --only install   # just the Home Screen guide
+python3 check.py --only languages # just the languages
 python3 check.py --url https://gridpoint.emersonxia.lol/   # the live site
 ```
 

@@ -12,6 +12,8 @@ re-derived independently here in Python:
   * Sunrise/sunset: the `astral` library; moon phases: the `ephem` library
   * Radar loads, forecaster discussion present, charts draw and the readout scrubs,
     the page locks while a sheet is open, no console errors, no NaN/undefined on screen
+  * Languages: every pack complete, each language on a phone screen, NWS wording translated,
+    "Automatic" following the device, the language picker
 
 Usage:
   python3 tests/check.py              # all places
@@ -19,6 +21,7 @@ Usage:
   python3 tests/check.py --only "Phoenix,Honolulu"
   python3 tests/check.py --json results.json
   python3 tests/check.py --url https://gridpoint.emersonxia.lol/   # test the live site
+  python3 tests/check.py --only languages   # just the 14 languages (or: install, search)
 
 Needs: pip install playwright astral ephem   (and Playwright's Chromium)
 Exit code 1 if anything FAILs; WARN lines are worth a look but can be timing (a new
@@ -1050,6 +1053,183 @@ async def check_search_and_report(browser, base, results, pw):
     await ctx.close()
 
 
+# NWS wording every language must translate on its own (no falling back to the icon): forecast phrases, then
+# station-report wording (chance None). Alert and period names too.
+LANG_PHRASES = [(x, 40) for x in [
+    'Sunny', 'Mostly Sunny', 'Partly Sunny', 'Mostly Cloudy', 'Cloudy', 'Clear', 'Mostly Clear', 'Partly Cloudy', 'Chance Rain Showers', 'Rain Showers Likely',
+    'Slight Chance Light Rain', 'Chance Light Snow', 'Snow Likely', 'Chance Rain And Snow', 'Isolated Showers And Thunderstorms', 'Scattered Showers And Thunderstorms',
+    'Showers And Thunderstorms Likely', 'Patchy Fog Then Mostly Sunny', 'Areas Of Fog', 'Patchy Frost', 'Patchy Drizzle', 'Chance Freezing Rain', 'Wintry Mix Likely',
+    'Blowing Snow', 'Heavy Snow', 'Mostly Sunny And Breezy', 'Sunny And Hot', 'Partly Cloudy And Windy', 'Haze', 'Areas Of Smoke', 'Slight Chance T-storms',
+    'Chance Flurries', 'Freezing Spray', 'Increasing Clouds', 'Decreasing Clouds', 'Becoming Sunny', 'Gradual Clearing', 'Chance Showers Then Slight Chance Rain']] + [(x, None) for x in [
+    'Fog/Mist', 'Light Rain and Fog/Mist', 'Thunderstorms and Rain', 'Unknown Precipitation', 'Light Snow', 'Heavy Rain', 'Thunderstorm in Vicinity', 'Light Freezing Rain', 'Smoke']]
+LANG_ALERTS = ['Tornado Warning', 'Severe Thunderstorm Watch', 'Winter Storm Warning', 'Heat Advisory', 'Special Weather Statement', 'Red Flag Warning', 'Flood Watch',
+               'Wind Advisory', 'Frost Advisory', 'Dense Fog Advisory', 'Hurricane Warning', 'Air Quality Alert']
+LANG_PERIODS = ['Tonight', 'This Afternoon', 'Overnight', 'Tuesday Night', 'Thanksgiving Day']
+
+
+async def check_languages(browser, base, results, pw):
+    """The language packs: every word the app uses translated in every language with its {placeholders} kept;
+    then each language in a phone-sized browser (no word missing, nothing wider than the screen, NWS wording
+    translated), "Automatic" following the device's language, and the language picker."""
+    res = {'place': 'Languages', 'fail': [], 'warn': [], 'info': []}
+    results.append(res)
+    root = base.rsplit('/', 1)[0] + '/' if base.endswith('.html') else base.rstrip('/') + '/'
+    try:
+        with urllib.request.urlopen(urllib.request.Request(root + 'index.html', headers={'User-Agent': UA['User-Agent']}), timeout=40) as r:
+            html = r.read().decode('utf-8')
+    except Exception as e:
+        res['fail'].append(f'could not read index.html: {e}')
+        return
+    langs = re.findall(r"\['([A-Za-z-]+)', '[^']+', '[A-Za-z]{2,3}-[A-Z]{2}'\]", html)
+    codes = [c for c in langs if c != 'en']
+    used = set()
+    for q in ("'", '"'):
+        for f in ('\\$t', 'tk'):
+            used |= {m.replace('\\' + q, q) for m in re.findall(f + r'\(' + q + r'((?:[^' + q + r'\\]|\\.)*)' + q, html)}
+    if len(codes) < 13:
+        res['fail'].append(f'language list in index.html looks wrong: {langs}')
+    packs, probs = {}, []
+    for c in codes:
+        try:
+            packs[c] = (await asyncio.to_thread(get_json, root + f'i18n/{c}.json', {'User-Agent': UA['User-Agent']}, 3))['strings']
+        except Exception as e:
+            probs.append(f'{c}: pack not loading ({e})')
+    allkeys = set().union(*packs.values()) if packs else set()
+    fixed = ('n:', 'c:', 'cx:', 'pn:', 'ap:', 'at:Warning', 'at:Watch', 'at:Advisory', 'at:Statement', 'at:Emergency', 'at:Alert', 'at:Outlook', 'at:Message', 'dl:', 'hs:', 'al:')
+    for c, S in packs.items():
+        miss = sorted((used | allkeys) - set(S))
+        if miss:
+            probs.append(f'{c}: {len(miss)} words missing, e.g. {miss[:3]}')
+        for k, v in S.items():
+            if not isinstance(v, str) or (not v.strip() and k != 'cx:then'):
+                probs.append(f'{c}: empty translation for {k!r}'); continue
+            if k.startswith('q:'):
+                if not re.search(r'\{(x|X|xo)\}', v): probs.append(f'{c}: {k} has no {{x}}: {v!r}')
+                continue
+            if k.startswith(fixed):
+                continue
+            if sorted(set(re.findall(r'\{\w+\}', k))) != sorted(set(re.findall(r'\{\w+\}', v))):
+                probs.append(f'{c}: placeholders differ in {k[:40]!r}: {v[:60]!r}')
+            if v.count('<b>') != v.count('</b>') or (('<b>' in v) and '<b>' not in k):
+                probs.append(f'{c}: <b> tags off in {k[:40]!r}')
+    if probs:
+        res['fail'].append('language packs: ' + '; '.join(probs[:8]) + (f' (+{len(probs) - 8} more)' if len(probs) > 8 else ''))
+    else:
+        res['info'].append(f'{len(packs)} language packs complete: {len(allkeys)} words each, placeholders and bold labels kept ✓')
+
+    seed = ("localStorage.setItem('gp:places', JSON.stringify([{id:'northfield-mn', name:'Northfield', region:'MN', lat:44.4620, lon:-93.1830}]));"
+            "localStorage.setItem('gp:tipDone', 'true');")
+    loaded = "document.querySelector('.hero-temp') && document.querySelector('.hero-temp').textContent.trim() !== '--'"
+    layout = r"""() => {
+      const inScroller = el => { for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };
+      const spill = [];
+      for (const el of document.querySelectorAll('#main *')) {
+        if (el.closest('svg') || !el.clientWidth || inScroller(el)) continue;
+        const cs = getComputedStyle(el);
+        if (cs.overflowX === 'visible' && cs.display !== 'inline' && el.scrollWidth > el.clientWidth + 2) spill.push((el.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 30));
+      }
+      const sun = [...document.querySelectorAll('.hr.sun .v')].filter(v => v.scrollWidth > v.clientWidth + 1).map(v => v.textContent);
+      return { wide: document.documentElement.scrollWidth - document.documentElement.clientWidth, spill: [...new Set(spill)].slice(0, 4), sun };
+    }"""
+    phrases = json.dumps(LANG_PHRASES)
+    words = r"""([P, A, N]) => { const T = window.__gpText, bad = [], latin = /^(zh|ja|ko|ru|el)/.test(document.documentElement.lang);
+      const leftover = s => latin && /[A-Za-z]{3,}/.test(s.replace(/\b(NWS|NOAA|T-storms?)\b/g, ''));
+      for (const [s, pop] of P) { const o = T.condText(s, '', pop); if (o === s || leftover(o)) bad.push(s + ' → ' + o); }
+      for (const a of A) { const o = T.alertName(a); if (o === a || leftover(o)) bad.push(a + ' → ' + o); }
+      for (const n of N) { const o = T.periodName(n); if (o === n) bad.push(n + ' → ' + o); }
+      return bad; }"""
+    sem = asyncio.Semaphore(4)
+    per = {}
+
+    async def one(code):
+        async with sem:
+            ctx = await browser.new_context(viewport={'width': 375, 'height': 812}, device_scale_factor=2, is_mobile=True, has_touch=True, locale='en-US')
+            await ctx.add_init_script(seed + f"localStorage.setItem('gp:lang', JSON.stringify({json.dumps(code)}));")
+            page = await ctx.new_page()
+            errs = []
+            page.on('pageerror', lambda e: errs.append(str(e)[:120]))
+            out = []
+            try:
+                await page.goto(base)
+                await page.wait_for_function(loaded, timeout=120000)
+                await page.wait_for_timeout(800)
+                got = await page.evaluate('document.documentElement.lang')
+                if got != code:
+                    out.append(f'page language is {got!r}')
+                lay = await page.evaluate(layout)
+                if lay['wide'] > 0:
+                    out.append(f"page {lay['wide']}px wider than the phone screen")
+                if lay['sun']:
+                    out.append(f"sunrise/sunset word too wide for its hour: {lay['sun']}")
+                if lay['spill']:
+                    per.setdefault('spill', []).append(f"{code}: {lay['spill']}")
+                bad = await page.evaluate(words, [LANG_PHRASES, LANG_ALERTS, LANG_PERIODS])
+                if bad:
+                    out.append(f'NWS wording left in English: {bad[:4]}')
+                await page.click('#main .day >> nth=1')
+                await page.wait_for_timeout(300)
+                for tab in await page.locator('#daySheet [data-metric]').all():
+                    await tab.click()
+                    await page.wait_for_timeout(120)
+                await page.keyboard.press('Escape')
+                await page.wait_for_timeout(250)
+                await page.click('.bar [data-lang]')
+                await page.wait_for_timeout(250)
+                await page.keyboard.press('Escape')
+                miss = await page.evaluate('[...window.__i18nMiss]')
+                if miss:
+                    out.append(f'words with no translation: {miss[:5]}')
+                if errs:
+                    out.append(f'script errors: {errs[:2]}')
+            except Exception as e:
+                out.append(f'check failed: {str(e)[:160]}')
+            await ctx.close()
+            per[code] = out
+
+    await asyncio.gather(*(one(c) for c in packs))
+    bad = {c: v for c, v in per.items() if c != 'spill' and v}
+    for c, v in bad.items():
+        res['fail'].append(f'{c}: ' + '; '.join(v))
+    if per.get('spill'):
+        res['warn'].append('text a little wider than its box: ' + '; '.join(per['spill'][:4]))
+    ok = [c for c in packs if not per.get(c)]
+    if ok:
+        res['info'].append(f"{', '.join(ok)}: every word translated, phone layout fits, NWS wording, alert and period names translated, no errors ✓")
+
+    # "Automatic" follows the device's language list; the picker switches and goes back
+    try:
+        probs = []
+        for loc, want in [('zh-TW', 'zh-Hant'), ('es-MX', 'es')]:
+            ctx = await browser.new_context(viewport={'width': 1280, 'height': 900}, locale=loc)
+            await ctx.add_init_script(seed)
+            page = await ctx.new_page()
+            await page.goto(base)
+            await page.wait_for_function(loaded, timeout=120000)
+            got = await page.evaluate('document.documentElement.lang')
+            if got != want:
+                probs.append(f'device language {loc} opened in {got!r}, not {want!r}')
+            if loc == 'es-MX':
+                await page.click('.bar [data-lang]')
+                await page.click('#langSheet [data-set-lang="fr"]')
+                await page.wait_for_function("document.documentElement.lang === 'fr'", timeout=20000)
+                stored = await page.evaluate("localStorage.getItem('gp:lang')")
+                if stored != '"fr"':
+                    probs.append(f'choosing Français stored {stored!r}')
+                if await page.evaluate("document.getElementById('langSheet').hidden"):
+                    await page.click('.bar [data-lang]')
+                await page.click('#langSheet [data-set-lang="auto"]')
+                await page.wait_for_function("document.documentElement.lang === 'es'", timeout=20000)
+                if 'Ningún lugar' not in (await page.evaluate("(async () => { const b = document.getElementById('q-side'); b.value = 'xyzq'; b.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(r => setTimeout(r, 700)); return (document.querySelector('#rw-side .empty') || {}).textContent || ''; })()")):
+                    probs.append('search message not in Spanish after going back to Automatic')
+            await ctx.close()
+        if probs:
+            res['fail'].append('language choice: ' + '; '.join(probs))
+        else:
+            res['info'].append('Automatic follows the device (zh-TW → 繁體中文, es-MX → Español); picking Français and going back to Automatic ✓')
+    except Exception as e:
+        res['fail'].append(f'language choice check failed: {str(e)[:200]}')
+
+
 class Quiet(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -1097,6 +1277,8 @@ async def main():
             await check_install(browser, base, results, p)
         if not args.only or 'search' in args.only.lower():
             await check_search_and_report(browser, base, results, p)
+        if not args.only or 'lang' in args.only.lower():
+            await check_languages(browser, base, results, p)
         await browser.close()
     if srv:
         srv.shutdown()

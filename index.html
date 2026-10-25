@@ -93,7 +93,14 @@ a { color: inherit; }
 .seg { display: inline-flex; background: rgba(255,255,255,0.14); border-radius: 0; padding: 2px; height: 34px; }
 .seg button { padding: 0 11px; border-radius: 0; font-size: 13px; font-weight: 500; color: var(--fg2); }
 .seg button[aria-pressed="true"] { background: rgba(255,255,255,0.92); color: #1d2f4a; }
-.updated { font-size: 12px; color: var(--fg2); white-space: nowrap; }
+.updated { font-size: 12px; color: var(--fg2); min-width: 0; text-align: right; line-height: 1.2; overflow-wrap: break-word; }
+.bar-right { min-width: 0; }
+/* small phones (iPhone SE, or Display Zoom): tighter bar */
+@media (max-width: 359px) {
+  .bar, .bar-left, .bar-right { gap: 6px; }
+  .seg button { padding: 0 8px; }
+  .updated { font-size: 11px; }
+}
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -124,6 +131,7 @@ a { color: inherit; }
 }
 .card-h svg { width: 14px; height: 14px; flex: none; opacity: .9; }
 .card-h .right { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.card-h .lbl { min-width: 0; overflow-wrap: anywhere; hyphens: auto; }   /* a long one-word label ("Luftfeuchtigkeit") on a small phone */
 .rule { height: 1px; background: var(--hair); margin: 9px 0 0; }
 
 /* notices + alerts */
@@ -136,6 +144,7 @@ a { color: inherit; }
 .alert-sub { font-size: 13px; color: var(--fg2); margin-top: 2px; }
 .alert-body { padding: 0 14px 14px; font-size: 14px; white-space: pre-wrap; color: var(--fg); }
 .alert-body h4 { margin: 10px 0 4px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg2); }
+.en-note { margin: 0 0 8px; font-size: 12.5px; color: var(--fg2); white-space: normal; }
 
 /* hourly */
 .summary { font-size: 15px; padding-bottom: 9px; border-bottom: 1px solid var(--hair); text-wrap: pretty; }
@@ -146,16 +155,20 @@ a { color: inherit; }
 .hr .ic .wi { width: 30px; height: 30px; }
 .hr .p { font-size: 11.5px; font-weight: 700; color: var(--rain); line-height: 1; margin-top: 1px; }
 .hr .v { font-size: 19px; font-weight: 500; }
-.hr.sun .v { font-size: 13px; font-weight: 500; padding-top: 3px; }
+.hr.sun .v { font-size: 13px; font-weight: 500; padding-top: 3px; max-width: 100%; text-align: center; line-height: 1.15; overflow-wrap: anywhere; hyphens: auto; }
 .hr.nbm .t { color: var(--fg2); }
 
 /* daily */
 .days { margin-top: 2px; }
 .day {
-  display: grid; grid-template-columns: 58px 40px 42px minmax(60px, 1fr) 42px; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: var(--dn, 58px) 40px 42px minmax(60px, 1fr) 42px; align-items: center; gap: 10px;
   width: 100%; text-align: left; padding: 9px 2px; border-top: 1px solid var(--hair); border-radius: 0;
 }
 .day:first-child { border-top: 0; }
+@media (max-width: 359px) {
+  .day { gap: 6px; grid-template-columns: var(--dn, 58px) 34px 36px minmax(36px, 1fr) 36px; }
+  .day .lo, .day .hi { font-size: 16px; }
+}
 .day:hover { background: rgba(255,255,255,0.05); }
 .day .dn { font-size: 17px; font-weight: 500; }
 .day .di { display: flex; flex-direction: column; align-items: center; }
@@ -176,15 +189,26 @@ a { color: inherit; }
 .tile { display: flex; flex-direction: column; min-height: 168px; }
 .tile.wide { grid-column: 1 / -1; min-height: 0; }
 .tile .big { font: 500 34px/1.05 var(--font-display); letter-spacing: -0.02em; margin-top: 8px; }
-.tile .small { font-size: 13.5px; color: var(--fg); margin-top: auto; padding-top: 8px; text-wrap: pretty; }
+.tile .small { font-size: 13.5px; color: var(--fg); margin-top: auto; padding-top: 8px; text-wrap: pretty; overflow-wrap: anywhere; hyphens: auto; }
 .tile .muted { color: var(--fg2); }
+.moonrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.moonrow > svg { flex: none; }
+.moonrow > div { flex: 1 1 0; overflow-wrap: break-word; }   /* beside the disc, or under it when the phase name is a long word */
+.moonrow .ph { font-size: 18px; font-weight: 600; line-height: 1.2; }
 .tile svg.gauge { display: block; margin: 6px auto 0; width: 100%; max-width: 150px; height: auto; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13.5px; margin-top: 8px; }
 .kv dt { color: var(--fg2); }
 .kv dd { margin: 0; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
 .windwrap { display: flex; align-items: center; gap: 16px; margin-top: 6px; }
 .windwrap svg { width: 104px; height: 104px; flex: none; }
-.windwrap .kv { margin-top: 0; }
+.windwrap .kv { margin-top: 0; min-width: 0; }
+.windwrap .kv dt { overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 359px) {
+  .windwrap { gap: 10px; }
+  .windwrap svg { width: 88px; height: 88px; }
+  .moonrow .ph { font-size: 16px; }
+  .dchip .w { font-size: 10.5px; letter-spacing: -0.01em; }
+}
 .sunrow { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
 .sunarc { display: block; flex: 1 1 150px; min-width: 0; max-width: 320px; height: auto; margin-left: auto; }
 
@@ -271,7 +295,7 @@ a { color: inherit; }
 .dstrip { display: grid; grid-template-columns: repeat(var(--n, 11), minmax(0, 1fr)); gap: 2px; margin-top: 14px; }
 .dchip { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px 0; border-radius: 0; }
 .dchip .w { font-size: 11.5px; font-weight: 700; color: var(--fg2); }
-.dchip .n { width: 32px; height: 32px; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; }
+.dchip .n { width: 100%; max-width: 32px; aspect-ratio: 1; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; }
 .dchip.today .n { color: #64c8ff; }
 .dchip[aria-current="true"] .n { background: #fff; color: #182437; }
 .dnav { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
@@ -418,6 +442,17 @@ html.locked, html.locked body { overflow: hidden; }
 .bug-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .bug-actions .btn1 { flex: 1 1 200px; width: auto; margin: 0; }
 .bug-actions .btn2 { min-height: 46px; }
+/* language picker */
+.lang-list { margin-top: 14px; border-top: 1px solid var(--hair); }
+.lang-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 4px; text-align: left; border-bottom: 1px solid var(--hair); }
+.lang-row:hover { background: rgba(255,255,255,0.06); }
+.lang-text { flex: 1; min-width: 0; }
+.lang-main { display: block; font-size: 16px; font-weight: 500; }
+.lang-sub { display: block; margin-top: 1px; font-size: 13px; color: var(--fg2); }
+.lang-check { flex: none; width: 20px; text-align: center; font-size: 17px; font-weight: 700; color: #64c8ff; }
+.lang-row.on .lang-main { font-weight: 700; }
+.ig-glyph { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: rgba(255,255,255,0.10); }
+.ig-glyph .glyph { width: 24px; height: 24px; color: var(--fg); vertical-align: 0; }
 .footlink { font-size: 12px; color: var(--fg2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,.35); }
 .ig-share { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 22px; }
 .ig-url { font-size: 13px; color: var(--fg2); }
@@ -434,6 +469,7 @@ html.locked, html.locked body { overflow: hidden; }
 <div class="sheet" id="placesSheet" hidden></div>
 <div class="sheet" id="installSheet" hidden></div>
 <div class="sheet" id="bugSheet" hidden></div>
+<div class="sheet" id="langSheet" hidden></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="icondefs"></defs></svg>
 
 <script>
@@ -444,7 +480,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-25 19:24 UTC';
+const APP_BUILD = '2026-10-25 22:12 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -477,6 +513,170 @@ for (const p of state.places) {
   if (m && m.v === MODEL_VERSION) state.models[p.id] = m;
 }
 
+/* ============================== language ==============================
+   Gridpoint's own words in 14 languages. "Automatic" follows the device's language list. Each language's
+   words live in i18n/<code>.json, and the one in use is kept on the device too, so the app opens in it
+   right away, offline included. Text written by the National Weather Service (forecast paragraphs, alert
+   details, the forecasters' discussion) only exists in English, so it stays in English. */
+const LANGS = [
+  /* code, its own name, the locale used for dates and numbers */
+  ['en', 'English', 'en-US'], ['es', 'Español', 'es-US'], ['zh-Hans', '简体中文', 'zh-CN'], ['zh-Hant', '繁體中文', 'zh-TW'],
+  ['vi', 'Tiếng Việt', 'vi-VN'], ['tl', 'Tagalog', 'fil-PH'], ['ko', '한국어', 'ko-KR'], ['fr', 'Français', 'fr-FR'],
+  ['pt', 'Português', 'pt-BR'], ['de', 'Deutsch', 'de-DE'], ['it', 'Italiano', 'it-IT'], ['el', 'Ελληνικά', 'el-GR'],
+  ['ja', '日本語', 'ja-JP'], ['ru', 'Русский', 'ru-RU'],
+];
+function matchLang(tag) {
+  const s = String(tag || '').toLowerCase();
+  if (!s) return null;
+  if (s.startsWith('zh')) return /hant|-tw|-hk|-mo/.test(s) ? 'zh-Hant' : 'zh-Hans';
+  if (s.startsWith('fil') || s === 'tl' || s.startsWith('tl-')) return 'tl';
+  const base = s.split('-')[0];
+  return LANGS.some(l => l[0] === base) ? base : null;
+}
+const deviceTags = () => (navigator.languages && navigator.languages.length ? [...navigator.languages] : [navigator.language]).filter(Boolean);
+const deviceLang = () => { for (const tag of deviceTags()) { const m = matchLang(tag); if (m) return m; } return 'en'; };
+state.lang = store.get('lang') || 'auto';
+if (state.lang !== 'auto' && !LANGS.some(l => l[0] === state.lang)) state.lang = 'auto';
+const LANG = () => state.lang === 'auto' ? deviceLang() : state.lang;
+const LOCALE = () => (LANGS.find(l => l[0] === LANG()) || LANGS[0])[2];
+const langName = code => (LANGS.find(l => l[0] === code) || LANGS[0])[1];
+let PACK = null;                                  /* { b: build it came with, s: { English: translation } }, or null for English */
+const i18nMiss = window.__i18nMiss = new Set();   /* words the pack in use doesn't have (checked by check.py) */
+window.__gpText = { condText: (...a) => condText(...a), alertName: e => alertName(e), periodName: n => periodName(n) };   /* for check.py */
+/* $t(words, { name }) gives the words in the language in use; {name} marks a value filled in */
+function $t(s, vars) {
+  let out = s;
+  if (PACK) { const tr = PACK.s[s]; if (tr) out = tr; else i18nMiss.add(s); }
+  return vars ? out.replace(/\{(\w+)\}/g, (m, k) => vars[k] != null ? vars[k] : m) : out;
+}
+const tk = s => s;   /* marks words that are translated later, where they're shown */
+const cap = s => s ? s.charAt(0).toLocaleUpperCase(LOCALE()) + s.slice(1) : s;
+function cachedPack(code) { const c = store.get('i18n:' + code); return c && c.s ? c : null; }
+function fetchPack(code) {
+  return getJSON(`i18n/${code}.json`, { retries: 1, timeout: 20000 }).then(j => {
+    const pack = { b: APP_BUILD, s: j.strings || {} };
+    store.set('i18n:' + code, pack);
+    return pack;
+  });
+}
+/* load the words for the language in use: from the device at once if they're saved there (refreshed in the
+   background after an update), otherwise from the site. Resolves once the words in use may have changed. */
+function applyLang() {
+  const code = LANG();
+  document.documentElement.lang = code;
+  if (code === 'en') { PACK = null; return Promise.resolve(false); }
+  const c = cachedPack(code);
+  if (c) {
+    PACK = c;
+    if (c.b === APP_BUILD) return Promise.resolve(false);
+    return fetchPack(code).then(p => { if (LANG() !== code) return false; PACK = p; return true; }).catch(() => false);
+  }
+  PACK = null;
+  return fetchPack(code).then(p => { if (LANG() !== code) return false; PACK = p; return true; }).catch(() => false);
+}
+const nfCache = new Map();
+/* a number with a fixed count of decimals, in the language's style (0.12 or 0,12) */
+function fmtNum(v, d = 0) {
+  const k = LOCALE() + d;
+  let f = nfCache.get(k);
+  if (!f) { f = new Intl.NumberFormat(LOCALE(), { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: false }); nfCache.set(k, f); }
+  return f.format(v);
+}
+/* Condition words. Station reports and the model come out as fixed English phrases, and NWS short forecasts
+   use a small vocabulary ("Chance Rain Showers then Mostly Sunny"), so they're translated piece by piece:
+   whole phrases (c:), weather nouns (n:, with "nominative|other case" where a language needs it) and the
+   qualifiers around them (q:). Anything not covered falls back to words built from the icon's code. */
+const COND_QUALS = ['Slight Chance', 'Chance', 'Isolated', 'Scattered', 'Numerous', 'Areas Of', 'Patchy', 'Widespread', 'Periods Of', 'Occasional', 'Frequent', 'Definite', 'Brief', 'Intermittent'];
+const titleWords = s => String(s || '').replace(/\s+/g, ' ').trim().split(' ').map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w).join(' ');
+function condNoun(n) {
+  const v = PACK && PACK.s['n:' + n];
+  if (!v) return null;
+  const [nom, other] = v.split('|');
+  return { nom, other: other || nom };
+}
+function condPhrase(p) {
+  const S = PACK.s;
+  if (S['c:' + p]) return S['c:' + p];
+  let x = condNoun(p);
+  if (x) return cap(x.nom);
+  const fill = (tpl, n) => tpl.replace(/\{X\}/g, cap(n.nom)).replace(/\{xo\}/g, n.other).replace(/\{x\}/g, n.nom);
+  const m = /^(.*) Likely$/.exec(p);
+  if (m && S['q:Likely'] && (x = condNoun(m[1]))) return fill(S['q:Likely'], x);
+  for (const q of COND_QUALS) if (p.startsWith(q + ' ') && S['q:' + q] && (x = condNoun(p.slice(q.length + 1)))) return fill(S['q:' + q], x);
+  const w = /^(.*) And (Breezy|Windy|Blustery|Hot|Cold)$/.exec(p);
+  if (w) { const a = condPhrase(w[1]), b = S['c:' + w[2]]; if (a && b) return a + ' · ' + b; }
+  return null;
+}
+const CODE_WORDS = { tsra: 'Thunderstorms', tsra_sct: 'Scattered Thunderstorms', tsra_hi: 'Isolated Thunderstorms', fog: 'Fog', haze: 'Haze', smoke: 'Smoke', dust: 'Dust', fzra: 'Freezing Rain', rain_fzra: 'Rain And Freezing Rain', snow_fzra: 'Snow And Freezing Rain', sleet: 'Sleet', rain_sleet: 'Rain And Sleet', snow_sleet: 'Snow And Sleet', blizzard: 'Blizzard', wind_skc: 'Windy', wind_few: 'Windy', wind_sct: 'Windy', wind_bkn: 'Windy', wind_ovc: 'Windy', hot: 'Hot', cold: 'Cold', tornado: 'Tornado', hurricane: 'Hurricane', tropical_storm: 'Tropical Storm', rain_showers_hi: 'Isolated Showers' };
+const CODE_CHANCY = new Set(['tsra', 'fzra', 'rain_fzra', 'snow_fzra', 'sleet', 'rain_sleet', 'snow_sleet']);
+/* a station report's wording ("Light Rain and Fog/Mist"): each part in turn, longest known phrase first */
+function obsPhrase(p) {
+  const seg = p.replace(/^(?:Light |Heavy )?Thunderstorms? And (?:Light |Heavy )?Rain\b/, 'Thunderstorm And Rain').split(' And '), out = [];
+  for (let i = 0; i < seg.length;) {
+    let j = seg.length, x = null;
+    for (; j > i; j--) if ((x = condPhrase(seg.slice(i, j).join(' And ').replace(/^(?:Light|Heavy) (Thunderstorms?)$/, '$1')))) break;
+    if (!x) return null;
+    out.push(x); i = j;
+  }
+  return out.join(' · ') || null;
+}
+/* the capitalized words in the German weather nouns ("Regen", "Schauer"), which keep their capital mid-sentence */
+const nounSets = new WeakMap();
+function germanNouns() {
+  if (!nounSets.has(PACK)) nounSets.set(PACK, new Set(Object.keys(PACK.s).filter(k => k.startsWith('n:')).flatMap(k => PACK.s[k].split(/[\s|,]+/)).filter(w => /^\p{Lu}/u.test(w))));
+  return nounSets.get(PACK);
+}
+/* pop: the chance of precipitation for a forecast; null for what's happening now (a station report) */
+function condText(s, code, pop, isDay = true) {
+  if (!PACK || !s) return s || '';
+  const t = titleWords(s).replace(/Fog\/mist/g, 'Mist').replace(/Unknown Precipitation/g, 'Precipitation');
+  const parts = t.split(' Then ').map(p => condPhrase(p) || (pop == null ? obsPhrase(p) : null));
+  if (parts.every(Boolean)) {
+    /* "Chance of showers, then mostly sunny": later parts start lowercase, except German nouns ("danach Regen") */
+    const j = PACK.s['cx:then'] || ', ', low = /^,/.test(j), de = LANG() === 'de' && germanNouns();
+    return parts.map((x, i) => i && low && !(de && de.has(x.split(' ')[0])) ? x.charAt(0).toLocaleLowerCase(LOCALE()) + x.slice(1) : x).join(j);
+  }
+  /* words NWS uses that aren't covered: say what the icon shows, with the chance (definite when it's happening now) */
+  if (code) {
+    const p = pop == null || !pop ? 100 : round10(pop), w = CODE_WORDS[code];
+    const words = !w ? nbmText(code, p, isDay) : !CODE_CHANCY.has(code) || p >= 80 ? w : p >= 60 ? w + ' Likely' : p >= 30 ? 'Chance ' + w : 'Slight Chance ' + w;
+    const alt = condPhrase(titleWords(words)); if (alt) return alt;
+  }
+  return s;
+}
+/* NWS period names: "Tonight", "This Afternoon", "Tuesday Night", holidays */
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const localWeekday = i => cap(new Date(Date.UTC(2026, 0, 4 + i, 12)).toLocaleDateString(LOCALE(), { weekday: 'long', timeZone: 'UTC' }));
+function periodName(name) {
+  if (!PACK || !name) return name || '';
+  if (PACK.s['pn:' + name]) return PACK.s['pn:' + name];
+  const m = /^(\w+day)( Night)?$/.exec(name), i = m ? WEEKDAYS.indexOf(m[1]) : -1;
+  if (i >= 0) return m[2] ? $t('{day} night', { day: localWeekday(i) }) : localWeekday(i);
+  return name;
+}
+/* how wide a piece of text is in the app's font, in CSS pixels ("500 17px" = weight and size) */
+let measureCtx = null;
+function textWidth(s, font) {
+  if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d');
+  measureCtx.font = `${font} ${getComputedStyle(document.body).fontFamily}`;
+  return measureCtx.measureText(String(s)).width;
+}
+/* "Today" in the 10-day list, where a language may use a shorter word ("Auj." in French) */
+const todayShort = () => (PACK && PACK.s['dl:Today']) || $t('Today');
+/* "Sunrise"/"Sunset" under the hour they happen in the hourly strip, where some languages use a shorter word */
+const sunWord = rise => (PACK && PACK.s[rise ? 'hs:Sunrise' : 'hs:Sunset']) || $t(rise ? 'Sunrise' : 'Sunset');
+/* NWS alert names: "Winter Storm Warning" = what + kind */
+function alertName(event) {
+  if (!PACK || !event) return event || '';
+  if (PACK.s['al:' + event]) return PACK.s['al:' + event];
+  const m = /^(.*) (Warning|Watch|Advisory|Statement|Emergency|Alert|Outlook|Message)$/.exec(event);
+  if (!m) return event;
+  const what = PACK.s['ap:' + m[1]], kind = PACK.s['at:' + m[2]], tpl = PACK.s['at:{kind} {what}'];
+  return what && kind && tpl ? cap(tpl.replace('{kind}', kind).replace('{what}', what)) : event;
+}
+/* marks text that stays in English (from NWS) so browsers and screen readers read it as English */
+const enText = html => PACK ? `<span lang="en">${html}</span>` : html;
+
 /* ============================== units ============================== */
 const cToF = c => (c == null || isNaN(c)) ? null : c * 9 / 5 + 32;
 const kmhToMph = k => (k == null || isNaN(k)) ? null : k / 1.609344;
@@ -487,28 +687,29 @@ const isNum = v => typeof v === 'number' && isFinite(v);
 const metric = () => state.units === 'metric';
 const tDisp = f => isNum(f) ? (metric() ? (f - 32) * 5 / 9 : f) : null;
 const fmtT = f => isNum(f) ? Math.round(tDisp(f)) + '°' : '--';
-const fmtWind = mph => !isNum(mph) ? '--' : metric() ? Math.round(mph * 1.609344) + ' km/h' : Math.round(mph) + ' mph';
-const windUnit = () => metric() ? 'km/h' : 'mph';
+const fmtWind = mph => !isNum(mph) ? '--' : metric() ? Math.round(mph * 1.609344) + ' ' + $t('km/h') : Math.round(mph) + ' ' + $t('mph');
+const windUnit = () => metric() ? $t('km/h') : $t('mph');
 const windDisp = mph => isNum(mph) ? (metric() ? mph * 1.609344 : mph) : null;
-const fmtPrecip = inch => !isNum(inch) ? '--' : metric() ? (inch * 25.4).toFixed(inch * 25.4 < 10 ? 1 : 0) + ' mm' : (inch < 0.005 && inch > 0 ? '<0.01' : inch.toFixed(2)) + '″';
+const fmtPrecip = inch => !isNum(inch) ? '--' : metric() ? fmtNum(inch * 25.4, inch * 25.4 < 10 ? 1 : 0) + ' ' + $t('mm') : (inch < 0.005 && inch > 0 ? '<' + fmtNum(0.01, 2) : fmtNum(inch, 2)) + '″';
 const precipDisp = inch => isNum(inch) ? (metric() ? inch * 25.4 : inch) : null;
-const fmtSnow = inch => !isNum(inch) ? '--' : metric() ? (inch * 2.54).toFixed(1) + ' cm' : inch.toFixed(1) + '″';
-const fmtPress = inHg => !isNum(inHg) ? '--' : metric() ? Math.round(inHg * 33.8639) + ' hPa' : inHg.toFixed(2) + ' inHg';
-const fmtVis = mi => !isNum(mi) ? '--' : metric() ? Math.round(mi * 1.609344) + ' km' : (mi >= 9.95 ? '10+' : mi < 1 ? mi.toFixed(1) : Math.round(mi)) + ' mi';
-const fmtDist = mi => !isNum(mi) ? '' : metric() ? Math.round(mi * 1.609344) + ' km' : Math.round(mi) + ' mi';
+const fmtSnow = inch => !isNum(inch) ? '--' : metric() ? fmtNum(inch * 2.54, 1) + ' ' + $t('cm') : fmtNum(inch, 1) + '″';
+const fmtPress = inHg => !isNum(inHg) ? '--' : metric() ? Math.round(inHg * 33.8639) + ' ' + $t('hPa') : fmtNum(inHg, 2) + ' ' + $t('inHg');
+const fmtVis = mi => !isNum(mi) ? '--' : metric() ? Math.round(mi * 1.609344) + ' ' + $t('km') : (mi >= 9.95 ? '10+' : mi < 1 ? fmtNum(mi, 1) : Math.round(mi)) + ' ' + $t('mi');
+const fmtDist = mi => !isNum(mi) ? '' : metric() ? Math.round(mi * 1.609344) + ' ' + $t('km') : Math.round(mi) + ' ' + $t('mi');
 const round10 = p => isNum(p) ? Math.round(p / 10) * 10 : 0;
 
 /* ============================== time (always in the place's zone) ============================== */
 const fmtCache = new Map();
-function dtf(tz, opts) {
-  const k = tz + '|' + JSON.stringify(opts);
+/* dates and times are written in the language in use; parts() always reads them in English for the math */
+function dtf(tz, opts, loc) {
+  const L = loc || LOCALE(), k = L + '|' + tz + '|' + JSON.stringify(opts);
   let f = fmtCache.get(k);
-  if (!f) { f = new Intl.DateTimeFormat('en-US', { timeZone: tz, ...opts }); fmtCache.set(k, f); }
+  if (!f) { f = new Intl.DateTimeFormat(L, { timeZone: tz, ...opts }); fmtCache.set(k, f); }
   return f;
 }
 function parts(t, tz) {
   const o = {};
-  for (const x of dtf(tz, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(t)) o[x.type] = x.value;
+  for (const x of dtf(tz, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }, 'en-US').formatToParts(t)) o[x.type] = x.value;
   return o;
 }
 const ymd = (t, tz) => { const p = parts(t, tz); return `${p.year}-${p.month}-${p.day}`; };
@@ -530,14 +731,15 @@ const dayStart = (s, tz) => { const [y, m, d] = splitDate(s); return zoned(y, m,
 const dayNoon = (s, tz) => { const [y, m, d] = splitDate(s); return zoned(y, m, d, 12, 0, tz); };
 const addDays = (s, n) => { const [y, m, d] = splitDate(s); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
 const utcNoon = s => { const [y, m, d] = splitDate(s); return Date.UTC(y, m - 1, d, 12); };
-const weekdayShort = s => new Date(utcNoon(s)).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
-const weekdayLong = s => new Date(utcNoon(s)).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-const weekdayInitial = s => new Date(utcNoon(s)).toLocaleDateString('en-US', { weekday: 'narrow', timeZone: 'UTC' });
-const longDate = s => new Date(utcNoon(s)).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-const monthDay = s => new Date(utcNoon(s)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const weekdayShort = s => cap(new Date(utcNoon(s)).toLocaleDateString(LOCALE(), { weekday: 'short', timeZone: 'UTC' }));
+const weekdayLong = s => new Date(utcNoon(s)).toLocaleDateString(LOCALE(), { weekday: 'long', timeZone: 'UTC' });
+const weekdayInitial = s => cap(new Date(utcNoon(s)).toLocaleDateString(LOCALE(), { weekday: 'narrow', timeZone: 'UTC' }));
+const longDate = s => cap(new Date(utcNoon(s)).toLocaleDateString(LOCALE(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }));
+const monthDay = s => new Date(utcNoon(s)).toLocaleDateString(LOCALE(), { month: 'short', day: 'numeric', timeZone: 'UTC' });
 const fmtClock = (t, tz) => dtf(tz, { hour: 'numeric', minute: '2-digit' }).format(t);
-const fmtHourLbl = (t, tz) => dtf(tz, { hour: 'numeric' }).format(t).replace(/\s/g, '');
-const fmtClockTight = (t, tz) => fmtClock(t, tz).replace(/\s/g, '');
+/* "1PM" in English; other languages keep their own spacing, held together so it never wraps */
+const fmtHourLbl = (t, tz) => { const s = dtf(tz, { hour: 'numeric' }).format(t); return LANG() === 'en' ? s.replace(/\s/g, '') : s.replace(/\s/g, '\u202f'); };
+const fmtClockTight = (t, tz) => LANG() === 'en' ? fmtClock(t, tz).replace(/\s/g, '') : fmtClock(t, tz).replace(/\s/g, '\u202f');
 const fmtWhen = (t, tz) => dtf(tz, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(t);
 
 /* ============================== sun + moon (after SunCalc, V. Agafonkin) ============================== */
@@ -600,14 +802,14 @@ function moonIllum(t) {
   return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math.PI };
 }
 function phaseName(p) {
-  if (p < 0.02 || p > 0.98) return 'New Moon';
-  if (p < 0.23) return 'Waxing Crescent';
-  if (p < 0.27) return 'First Quarter';
-  if (p < 0.48) return 'Waxing Gibbous';
-  if (p < 0.52) return 'Full Moon';
-  if (p < 0.73) return 'Waning Gibbous';
-  if (p < 0.77) return 'Last Quarter';
-  return 'Waning Crescent';
+  if (p < 0.02 || p > 0.98) return tk('New Moon');
+  if (p < 0.23) return tk('Waxing Crescent');
+  if (p < 0.27) return tk('First Quarter');
+  if (p < 0.48) return tk('Waxing Gibbous');
+  if (p < 0.52) return tk('Full Moon');
+  if (p < 0.73) return tk('Waning Gibbous');
+  if (p < 0.77) return tk('Last Quarter');
+  return tk('Waning Crescent');
 }
 /* Exact times of the principal phases: Meeus, Astronomical Algorithms ch. 49 (accurate to about a minute). */
 function moonPhaseTime(k) {
@@ -645,7 +847,7 @@ function moonPhaseTime(k) {
   return (jde + x - 2440587.5) * DAY - 69e3; /* TT to UT: ΔT ≈ 69 s */
 }
 function nextPhases(t, n = 4) {
-  const names = ['New Moon', 'First Quarter', 'Full Moon', 'Last Quarter'];
+  const names = [tk('New Moon'), tk('First Quarter'), tk('Full Moon'), tk('Last Quarter')];
   const yr = 2000 + (t - Date.UTC(2000, 0, 6)) / (365.25 * DAY);
   const k0 = Math.floor((yr - 2000) * 12.3685) - 1, out = [];
   for (let i = 0; out.length < n && i < 40; i++) {
@@ -656,7 +858,8 @@ function nextPhases(t, n = 4) {
 }
 
 /* ============================== weather helpers ============================== */
-const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const DIRS = [tk('N'), tk('NNE'), tk('NE'), tk('ENE'), tk('E'), tk('ESE'), tk('SE'), tk('SSE'), tk('S'), tk('SSW'), tk('SW'), tk('WSW'), tk('W'), tk('WNW'), tk('NW'), tk('NNW')];
+const dirLabel = d => $t(degToDir(d));
 const dirToDeg = s => { const i = DIRS.indexOf(String(s || '').trim()); return i < 0 ? null : i * 22.5; };
 const degToDir = d => isNum(d) ? DIRS[Math.round((((d % 360) + 360) % 360) / 22.5) % 16] : '';
 function parseWind(s) { const n = String(s || '').match(/\d+/g); if (!n) return { lo: null, hi: null }; return { lo: +n[0], hi: +n[n.length - 1] }; }
@@ -826,6 +1029,7 @@ const UI = {
   left: '<path d="M15 4 7 12l8 8" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   right: '<path d="m9 4 8 8-8 8" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
   cloud: '<path d="M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18Z" stroke="currentColor" stroke-width="2" fill="none"/>',
+  globe: '<circle cx="12" cy="12" r="8.6" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3.6 12h16.8M12 3.4c2.5 2.4 3.7 5.3 3.7 8.6s-1.2 6.2-3.7 8.6c-2.5-2.4-3.7-5.3-3.7-8.6s1.2-6.2 3.7-8.6Z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>',
 };
 document.getElementById('icondefs').innerHTML = Object.entries(ICONS).map(([k, v]) => `<symbol id="w-${k}" viewBox="0 0 64 64">${v}</symbol>`).join('');
 const wi = (id, cls = '') => `<svg class="wi ${cls}" viewBox="0 0 64 64" aria-hidden="true"><use href="#w-${id}"/></svg>`;
@@ -1025,7 +1229,7 @@ async function getExt(place, tz, model) {
   if (j && j.error) throw Object.assign(new Error(j.reason || 'model error'), { status: 400 });
   return j;
 }
-const extName = m => m && m.ext === 'GFS' ? 'NOAA GFS model' : 'National Blend of Models';
+const extName = m => m && m.ext === 'GFS' ? $t('NOAA GFS model') : $t('National Blend of Models');
 const extTag = m => m && m.ext === 'GFS' ? 'GFS' : 'NBM';
 /* ============================== place search ==============================
    Searches a built-in list of U.S. places (places.json: GeoNames, every place with 500+ people, plus
@@ -1174,9 +1378,9 @@ function buildModel(place, pt, r, ob) {
   const tz = pt.tz || 'America/Chicago', now = Date.now();
   const notices = [];
   const fc = settled(r.fc), hr = settled(r.hr), grid = settled(r.grid), nbm = settled(r.nbm), alerts = settled(r.alerts) || [];
-  if (!fc) notices.push("weather.gov's 7-day forecast didn't load this time.");
-  if (!hr) notices.push("weather.gov's hourly forecast didn't load this time, so hourly numbers come from NOAA's model guidance.");
-  if (!nbm && !r.extPending) notices.push("The extended outlook didn't load this time, so the forecast stops at 7 days.");
+  if (!fc) notices.push(tk("weather.gov's 7-day forecast didn't load this time."));
+  if (!hr) notices.push(tk("weather.gov's hourly forecast didn't load this time, so hourly numbers come from NOAA's model guidance."));
+  if (!nbm && !r.extPending) notices.push(tk("The extended outlook didn't load this time, so the forecast stops at 7 days."));
   const g = grid && grid.properties;
   const gm = {
     feels: expand(g && g.apparentTemperature, cToF), gust: expand(g && g.windGust, kmhToMph), sky: expand(g && g.skyCover),
@@ -1327,7 +1531,7 @@ function buildModel(place, pt, r, ob) {
     current, hourly, daily, today: todayRow ? { hi: todayRow.hi, lo: todayRow.lo } : null,
     hist: hist.filter(h => h.t > now - 26 * HOUR),
     alerts, notices, afd: settled(r.afd),
-    summary: per[0] ? { name: per[0].name, text: per[0].detailedForecast } : null,
+    summary: per[0] ? { name: per[0].name, text: per[0].detailedForecast, short: per[0].shortForecast, temp: per[0].temperature, day: !!per[0].isDaytime, pop: (per[0].probabilityOfPrecipitation && per[0].probabilityOfPrecipitation.value) || 0, code: nwsIcon(per[0].icon).code } : null,
     issued: fc ? Date.parse(fc.properties.updateTime) : null,
     nbmOk: !!nbm, ext: nbm ? nbm._model || 'NBM' : null,
   };
@@ -1443,11 +1647,11 @@ function render() { renderSidebar(); renderMain(); if (!$('daySheet').hidden) re
 const isSearching = () => state.query.trim().length > 0;
 function placesPanel(where) {
   return `<div id="top-${where}">${panelTopHTML()}</div>
-    <div class="search">${ui('search')}<input id="q-${where}" type="search" placeholder="City, state or ZIP" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(state.query)}" aria-label="Search for a place" role="combobox" aria-autocomplete="list" aria-expanded="${isSearching()}" aria-controls="res-${where}"></div>
+    <div class="search">${ui('search')}<input id="q-${where}" type="search" placeholder="${esc($t('City, state or ZIP'))}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(state.query)}" aria-label="${esc($t('Search for a place'))}" role="combobox" aria-autocomplete="list" aria-expanded="${isSearching()}" aria-controls="res-${where}"></div>
     <div id="rw-${where}">${resultsHTML(where)}</div>
     <div id="pw-${where}"${isSearching() ? ' hidden' : ''}>${panelListHTML()}</div>`;
 }
-const panelTopHTML = () => `<div class="sb-head"><div class="sb-title">Weather</div><button class="textbtn" data-edit>${state.editing ? 'Done' : 'Edit'}</button></div>`;
+const panelTopHTML = () => `<div class="sb-head"><div class="sb-title">${esc($t('Weather'))}</div><button class="textbtn" data-edit>${esc(state.editing ? $t('Done') : $t('Edit'))}</button></div>`;
 function updatePanel(where) {
   const top = $('top-' + where), rw = $('rw-' + where), pw = $('pw-' + where), inp = $('q-' + where);
   if (!top || !rw || !pw || !inp) return false;
@@ -1465,42 +1669,45 @@ function updatePanel(where) {
 function resultsHTML(where) {
   if (!isSearching()) return '';
   const q = state.query.trim(), rs = state.results || [];
-  const empty = state.searchBusy ? 'Searching…'
-    : /^\d+$/.test(q) && q.length < 3 ? 'Keep typing the ZIP code.'
-    : `No U.S. places match “${esc(q)}”. Try adding the state, like “Springfield, IL”, or a ZIP code.`;
-  return `<div class="results" role="listbox" id="res-${where}" aria-label="Places that match">${rs.length ? rs.map((r, i) => `<button class="res${i === state.hl ? ' hl' : ''}" id="res-${where}-${i}" data-result="${i}" role="option" aria-selected="${i === state.hl}" tabindex="-1">
+  const empty = state.searchBusy ? esc($t('Searching…'))
+    : /^\d+$/.test(q) && q.length < 3 ? esc($t('Keep typing the ZIP code.'))
+    : esc($t('No U.S. places match “{q}”. Try adding the state, like “Springfield, IL”, or a ZIP code.', { q }));
+  return `<div class="results" role="listbox" id="res-${where}" aria-label="${esc($t('Places that match'))}">${rs.length ? rs.map((r, i) => `<button class="res${i === state.hl ? ' hl' : ''}" id="res-${where}-${i}" data-result="${i}" role="option" aria-selected="${i === state.hl}" tabindex="-1">
       <span class="res-name">${boldMatch(r.name, r.match)}<span class="res-st">, ${esc(r.region)}</span></span>
-      <span class="res-sub">${r.zip ? `ZIP ${r.zip.startsWith(q) ? `<b>${esc(q)}</b>${esc(r.zip.slice(q.length))}` : esc(r.zip)} · ` : ''}${esc([r.county, r.regionFull].filter(Boolean).join(', '))}</span></button>`).join('') : `<div class="empty">${empty}</div>`}</div>`;
+      <span class="res-sub">${r.zip ? `${esc($t('ZIP'))} ${r.zip.startsWith(q) ? `<b>${esc(q)}</b>${esc(r.zip.slice(q.length))}` : esc(r.zip)} · ` : ''}${esc([r.county, r.regionFull].filter(Boolean).join(', '))}</span></button>`).join('') : `<div class="empty">${empty}</div>`}</div>`;
 }
 function panelListHTML() {
   const cards = state.places.map(p => {
     const m = viewModel(state.models[p.id]), c = m && m.current;
     const col = c ? SKY[skyKey(c.code, isDayNow(m))] : null;
     const style = col ? ` style="--c1:${col[0]};--c2:${col[1]}"` : '';
-    const time = m ? fmtClock(Date.now(), m.place.tz) : (state.loading[p.id] ? 'Loading…' : '');
+    const time = m ? fmtClock(Date.now(), m.place.tz) : (state.loading[p.id] ? $t('Loading…') : '');
+    const pname = p.id === 'here' ? $t('My Location') : p.name;
     return `<div style="position:relative"><button class="pcard${p.id === state.selected ? ' sel' : ''}" data-place="${esc(p.id)}"${style}>
-      <div class="pc-top"><div><div class="pc-name">${esc(p.name)}</div><div class="pc-time">${esc(p.id === 'here' && m && m.place.city ? m.place.city : p.region)}${time ? ' · ' + esc(time) : ''}</div></div><div class="pc-temp">${c ? fmtT(c.tempF) : '--'}</div></div>
-      <div class="pc-bot"><div class="pc-cond">${c ? esc(c.text) : state.errors[p.id] ? 'Couldn’t load' : '&nbsp;'}</div><div class="pc-hilo">${m && m.today ? `H:${fmtT(m.today.hi)} L:${fmtT(m.today.lo)}` : ''}</div></div>
-    </button>${state.editing && state.places.length > 1 ? `<button class="pc-del" data-del="${esc(p.id)}" aria-label="Remove ${esc(p.name)}">–</button>` : ''}</div>`;
+      <div class="pc-top"><div><div class="pc-name">${esc(pname)}</div><div class="pc-time">${esc(p.id === 'here' && m && m.place.city ? m.place.city : p.region)}${time ? ' · ' + esc(time) : ''}</div></div><div class="pc-temp">${c ? fmtT(c.tempF) : '--'}</div></div>
+      <div class="pc-bot"><div class="pc-cond">${c ? esc(condText(c.text, c.code, null, isDayNow(m))) : state.errors[p.id] ? esc($t('Couldn’t load')) : '&nbsp;'}</div><div class="pc-hilo">${m && m.today ? esc(`${$t('H:{t}', { t: fmtT(m.today.hi) })} ${$t('L:{t}', { t: fmtT(m.today.lo) })}`) : ''}</div></div>
+    </button>${state.editing && state.places.length > 1 ? `<button class="pc-del" data-del="${esc(p.id)}" aria-label="${esc($t('Remove {name}', { name: pname }))}">–</button>` : ''}</div>`;
   }).join('');
-  return `${'geolocation' in navigator ? `<button class="herebtn" data-here>${ui('pin')} Use my location</button>` : ''}
+  return `${'geolocation' in navigator ? `<button class="herebtn" data-here>${ui('pin')} ${esc($t('Use my location'))}</button>` : ''}
     <div class="plist">${cards}</div>
     ${aboutHTML()}`;
 }
 function aboutHTML(extra = '') {
-  return `<section class="about${extra}" aria-label="About Gridpoint">
+  const li = (b, t) => `<li><b>${esc($t(b))}</b> ${esc($t(t))}</li>`;
+  return `<section class="about${extra}" aria-label="${esc($t('About Gridpoint'))}">
     <div class="about-name">Gridpoint</div>
-    <p class="about-lead">The official National Weather Service forecast for your exact spot, with live readings and the forecasters’ own reasoning.</p>
+    <p class="about-lead">${esc($t('The official National Weather Service forecast for your exact spot, with live readings and the forecasters’ own reasoning.'))}</p>
     <ul>
-      <li><b>Forecast by local meteorologists.</b> Most weather apps run their own forecast systems. Gridpoint shows the forecast the meteorologists at your local NWS office issue for your 2.5 km grid square.</li>
-      <li><b>Measured, not estimated.</b> “Now” is a real reading from the nearest official weather station, usually minutes old, and Gridpoint names the station.</li>
-      <li><b>The reasoning, not just numbers.</b> Read the forecasters’ discussion of what they expect and how sure they are.</li>
-      <li><b>Honest about the long range.</b> Days 8–11 come straight from NOAA’s model guidance and are labeled, since no forecaster has reviewed them yet.</li>
-      <li><b>No ads, no tracking, no account.</b></li>
+      ${li(tk('Forecast by local meteorologists.'), tk('Most weather apps run their own forecast systems. Gridpoint shows the forecast the meteorologists at your local NWS office issue for your 2.5 km grid square.'))}
+      ${li(tk('Measured, not estimated.'), tk('“Now” is a real reading from the nearest official weather station, usually minutes old, and Gridpoint names the station.'))}
+      ${li(tk('The reasoning, not just numbers.'), tk('Read the forecasters’ discussion of what they expect and how sure they are.'))}
+      ${li(tk('Honest about the long range.'), tk('Days 8–11 come straight from NOAA’s model guidance and are labeled, since no forecaster has reviewed them yet.'))}
+      <li><b>${esc($t('No ads, no tracking, no account.'))}</b></li>
     </ul>
     ${isStandalone() || justInstalled ? '' : `<button class="about-install" data-install>${GL.add}<span>${esc(installLabel())}</span><span class="arr" aria-hidden="true">›</span></button>`}
-    <button class="about-install" data-bug>${GL.bug}<span>Report a bug</span><span class="arr" aria-hidden="true">›</span></button>
-    <p class="about-fine">U.S. locations only. Data from NOAA and the National Weather Service, the Iowa Environmental Mesonet, and Open-Meteo. Place search uses GeoNames (CC BY 4.0).</p>
+    <button class="about-install" data-lang>${GL.globe}<span>${esc($t('Language'))}: ${esc(state.lang === 'auto' ? $t('Automatic ({name})', { name: langName(LANG()) }) : langName(LANG()))}</span><span class="arr" aria-hidden="true">›</span></button>
+    <button class="about-install" data-bug>${GL.bug}<span>${esc($t('Report a bug'))}</span><span class="arr" aria-hidden="true">›</span></button>
+    <p class="about-fine">${esc($t('U.S. locations only. Data from NOAA and the National Weather Service, the Iowa Environmental Mesonet, and Open-Meteo. Place search uses GeoNames (CC BY 4.0).'))}</p>
   </section>`;
 }
 
@@ -1527,9 +1734,10 @@ const isStandalone = () => navigator.standalone === true ||
   ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'].some(m => window.matchMedia && matchMedia(`(display-mode: ${m})`).matches);
 function installLabel() {
   const k = deviceKind();
-  return k === 'mac' ? 'Add Gridpoint to your Dock' : k === 'desktop' || k === 'firefox' ? 'Install Gridpoint as an app' : 'Add Gridpoint to your Home Screen';
+  return k === 'mac' ? $t('Add Gridpoint to your Dock') : k === 'desktop' || k === 'firefox' ? $t('Install Gridpoint as an app') : $t('Add Gridpoint to your Home Screen');
 }
 const GL = {
+  globe: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
   share: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11M8 7.5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 10.5H5.5v10h13v-10h-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
   add: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
   bug: '<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7.2a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="7.5" y="8" width="9" height="12" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5V20M3.5 12.5h4M16.5 12.5h4M4 18h3.8M16.2 18H20M5 6.5l2.6 2.3M19 6.5l-2.6 2.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -1540,58 +1748,63 @@ let installEvt = null, justInstalled = false;
 
 function stepsFor(k, here) {
   const host = esc(location.host || 'this site');
-  const ol = items => `<ol class="steps">${items.map(s => `<li><span>${s}</span></li>`).join('')}</ol>`;
-  const note = s => `<p class="note">${s}</p>`;
+  const ol = items => `<ol class="steps">${items.map(x => `<li><span>${x}</span></li>`).join('')}</ol>`;
+  const note = x => `<p class="note">${x}</p>`;
+  /* the words keep their <b> tags; {share} and the like are the little button pictures */
+  const g = { share: GL.share, add: GL.add, install: GL.install, more: KB('•••'), dots: KB('⋮'), ellipsis: KB('…'), host };
+  const T = x => $t(x, g);
   if (k === 'ios') return ol([
-    `Tap <b>Share</b> ${GL.share}. If you don’t see it, tap ${KB('•••')} next to the address bar first.`,
-    `Tap <b>Add to Home Screen</b> ${GL.add}. You may need to scroll down the list to find it.`,
-    `If you see <b>Open as Web App</b>, leave it on. Then tap <b>Add</b>.`,
-  ]) + (here ? '' : note(`Using Chrome, Firefox or Edge on an iPhone? Tap <b>Share</b> (in Chrome it’s in the address bar; in Firefox and Edge it’s in the menu), then <b>Add to Home Screen</b>.`));
+    T('Tap <b>Share</b> {share}. If you don’t see it, tap {more} next to the address bar first.'),
+    T('Tap <b>Add to Home Screen</b> {add}. You may need to scroll down the list to find it.'),
+    T('If you see <b>Open as Web App</b>, leave it on. Then tap <b>Add</b>.'),
+  ]) + (here ? '' : note(T('Using Chrome, Firefox or Edge on an iPhone? Tap <b>Share</b> (in Chrome it’s in the address bar; in Firefox and Edge it’s in the menu), then <b>Add to Home Screen</b>.')));
   if (k === 'ios-other') return ol([
-    `Tap <b>Share</b> ${GL.share}. In Chrome it’s in the address bar. In Firefox and Edge, open the menu first.`,
-    `Tap <b>Add to Home Screen</b> ${GL.add}, then <b>Add</b>.`,
-  ]) + note(`Not there? Open ${host} in Safari and add it from there.`);
+    T('Tap <b>Share</b> {share}. In Chrome it’s in the address bar. In Firefox and Edge, open the menu first.'),
+    T('Tap <b>Add to Home Screen</b> {add}, then <b>Add</b>.'),
+  ]) + note(T('Not there? Open {host} in Safari and add it from there.'));
   if (k === 'android') return ol([
-    `In Chrome, tap ${KB('⋮')} at the top right.`,
-    `Tap <b>Add to home screen</b>, or <b>Install app</b> if that’s what you see.`,
-    `Choose <b>Install</b>, then confirm.`,
-  ]) + note(`In Samsung Internet, Firefox or Edge, look for <b>Install</b> or <b>Add to Home screen</b> in the browser’s menu.`);
+    T('In Chrome, tap {dots} at the top right.'),
+    T('Tap <b>Add to home screen</b>, or <b>Install app</b> if that’s what you see.'),
+    T('Choose <b>Install</b>, then confirm.'),
+  ]) + note(T('In Samsung Internet, Firefox or Edge, look for <b>Install</b> or <b>Add to Home screen</b> in the browser’s menu.'));
   if (k === 'mac') return ol([
-    `In Safari’s menu bar, choose <b>File</b> → <b>Add to Dock</b>. Or click <b>Share</b> ${GL.share} and choose <b>Add to Dock</b>.`,
-    `Click <b>Add</b>. Gridpoint appears in your Dock and in your Applications folder.`,
-  ]) + note(`Needs macOS Sonoma or later. In Chrome or Edge on a Mac, follow the steps for those browsers.`);
-  if (k === 'firefox') return `<p>Firefox doesn’t install websites as apps on most computers yet. Gridpoint still works offline in a Firefox tab once you’ve opened it, so a bookmark works well. For an app icon, open ${host} in Chrome, Edge or Safari.</p>`;
+    T('In Safari’s menu bar, choose <b>File</b> → <b>Add to Dock</b>. Or click <b>Share</b> {share} and choose <b>Add to Dock</b>.'),
+    T('Click <b>Add</b>. Gridpoint appears in your Dock and in your Applications folder.'),
+  ]) + note(T('Needs macOS Sonoma or later. In Chrome or Edge on a Mac, follow the steps for those browsers.'));
+  if (k === 'firefox') return `<p>${T('Firefox doesn’t install websites as apps on most computers yet. Gridpoint still works offline in a Firefox tab once you’ve opened it, so a bookmark works well. For an app icon, open {host} in Chrome, Edge or Safari.')}</p>`;
   return ol([
-    `Click the install icon ${GL.install} at the right end of the address bar.`,
-    `Click <b>Install</b>. Gridpoint opens in its own window, with an icon like any other app.`,
-  ]) + note(`No icon? In Chrome, open ${KB('⋮')} → <b>Cast, save and share</b> → <b>Install page as app</b>. In Edge, open ${KB('…')} → <b>Apps</b> → <b>Install this site as an app</b>.`);
+    T('Click the install icon {install} at the right end of the address bar.'),
+    T('Click <b>Install</b>. Gridpoint opens in its own window, with an icon like any other app.'),
+  ]) + note(T('No icon? In Chrome, open {dots} → <b>Cast, save and share</b> → <b>Install page as app</b>. In Edge, open {ellipsis} → <b>Apps</b> → <b>Install this site as an app</b>.'));
 }
 function guideHTML() {
   const k = deviceKind(), installed = isStandalone() || justInstalled;
   const mobile = k === 'ios' || k === 'ios-other' || k === 'android';
-  const title = installed ? 'Gridpoint is on this device' : mobile ? 'Add Gridpoint to your Home Screen' : k === 'mac' ? 'Add Gridpoint to your Dock' : 'Install Gridpoint as an app';
+  const title = installed ? $t('Gridpoint is on this device') : mobile ? $t('Add Gridpoint to your Home Screen') : k === 'mac' ? $t('Add Gridpoint to your Dock') : $t('Install Gridpoint as an app');
   const lead = installed
-    ? (isStandalone() ? 'You’re using the installed app. It works offline and updates itself.' : `Done. Open Gridpoint from your ${mobile ? 'Home Screen' : 'apps'} from now on.`)
-    : mobile ? 'It opens full screen like any other app, one tap from your Home Screen, and it works without a connection. Nothing to download from an app store, and no account.'
-    : 'It opens in its own window like any other app, and it works without a connection. Nothing to download from an app store, and no account.';
-  const here = { ios: IS_IPAD ? 'On this iPad' : 'On this iPhone', 'ios-other': IS_IPAD ? 'On this iPad' : 'On this iPhone', android: 'On this phone', mac: 'On this Mac', firefox: 'In Firefox', desktop: 'On this computer' }[k];
+    ? (isStandalone() ? $t('You’re using the installed app. It works offline and updates itself.') : mobile ? $t('Done. Open Gridpoint from your Home Screen from now on.') : $t('Done. Open Gridpoint from your apps from now on.'))
+    : mobile ? $t('It opens full screen like any other app, one tap from your Home Screen, and it works without a connection. Nothing to download from an app store, and no account.')
+    : $t('It opens in its own window like any other app, and it works without a connection. Nothing to download from an app store, and no account.');
+  const here = { ios: IS_IPAD ? $t('On this iPad') : $t('On this iPhone'), 'ios-other': IS_IPAD ? $t('On this iPad') : $t('On this iPhone'), android: $t('On this phone'), mac: $t('On this Mac'), firefox: $t('In Firefox'), desktop: $t('On this computer') }[k];
   const own = k === 'ios-other' ? 'ios' : k === 'firefox' ? 'desktop' : k;
-  const others = [['ios', 'iPhone and iPad'], ['android', 'Android phones and tablets'], ['mac', 'Mac (Safari)'], ['desktop', 'Chrome or Edge on a computer']].filter(([key]) => key !== own || installed);
+  const others = [['ios', $t('iPhone and iPad')], ['android', $t('Android phones and tablets')], ['mac', $t('Mac (Safari)')], ['desktop', $t('Chrome or Edge on a computer')]].filter(([key]) => key !== own || installed);
   const separate = !installed && (k === 'ios' || k === 'ios-other' || k === 'mac');
   const icon = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href;
   return `<div class="panel install-panel" role="dialog" aria-modal="true" aria-labelledby="ig-title" tabindex="-1">
-    <div class="ig-top">${icon ? `<img class="ig-icon" src="${esc(icon)}" alt="">` : ''}<h2 class="ig-title" id="ig-title">${esc(title)}</h2><button class="xbtn" data-close-guide aria-label="Close">${ui('close')}</button></div>
+    <div class="ig-top">${icon ? `<img class="ig-icon" src="${esc(icon)}" alt="">` : ''}<h2 class="ig-title" id="ig-title">${esc(title)}</h2><button class="xbtn" data-close-guide aria-label="${esc($t('Close'))}">${ui('close')}</button></div>
     <p class="ig-lead">${esc(lead)}</p>
-    ${!installed && installEvt ? `<button class="btn1" data-install-go>Install Gridpoint</button>` : ''}
+    ${!installed && installEvt ? `<button class="btn1" data-install-go>${esc($t('Install Gridpoint'))}</button>` : ''}
     ${installed ? '' : `<section class="ig-sec"><h3 class="ig-h">${esc(here)}</h3>${stepsFor(k, true)}</section>`}
-    <section class="ig-sec"><h3 class="ig-h">Works offline</h3>
-      <p>Once you’ve opened Gridpoint with a connection, the app is saved on this device. With no connection it still opens and shows the last forecast saved for each of your places, with the time it was saved. Radar and fresh readings come back when you’re online.</p>
-      ${separate ? `<p class="note">The ${k === 'mac' ? 'Dock' : 'Home Screen'} app keeps its own list of places, separate from ${k === 'ios-other' ? 'your browser' : 'Safari'}, so add your places again there. It also keeps its saved forecasts, which Safari can clear from a website you haven’t opened in a while.</p>` : ''}
+    <section class="ig-sec"><h3 class="ig-h">${esc($t('Works offline'))}</h3>
+      <p>${esc($t('Once you’ve opened Gridpoint with a connection, the app is saved on this device. With no connection it still opens and shows the last forecast saved for each of your places, with the time it was saved. Radar and fresh readings come back when you’re online.'))}</p>
+      ${separate ? `<p class="note">${esc(k === 'mac' ? $t('The Dock app keeps its own list of places, separate from Safari, so add your places again there. It also keeps its saved forecasts, which Safari can clear from a website you haven’t opened in a while.')
+        : k === 'ios-other' ? $t('The Home Screen app keeps its own list of places, separate from your browser, so add your places again there. It also keeps its saved forecasts, which Safari can clear from a website you haven’t opened in a while.')
+        : $t('The Home Screen app keeps its own list of places, separate from Safari, so add your places again there. It also keeps its saved forecasts, which Safari can clear from a website you haven’t opened in a while.'))}</p>` : ''}
     </section>
-    <section class="ig-sec"><h3 class="ig-h">${installed ? 'Add it to another device' : 'Other devices'}</h3>
+    <section class="ig-sec"><h3 class="ig-h">${esc(installed ? $t('Add it to another device') : $t('Other devices'))}</h3>
       <div class="ig-more">${others.map(([key, label]) => `<details><summary>${esc(label)}</summary><div>${stepsFor(key, false)}</div></details>`).join('')}</div>
     </section>
-    <div class="ig-share"><button class="btn2" data-share-app>${GL.share}<span class="lbl">Share Gridpoint</span></button><span class="ig-url">${esc(((location.host || '') + appPath()).replace(/\/$/, ''))}</span></div>
+    <div class="ig-share"><button class="btn2" data-share-app>${GL.share}<span class="lbl">${esc($t('Share Gridpoint'))}</span></button><span class="ig-url">${esc(((location.host || '') + appPath()).replace(/\/$/, ''))}</span></div>
   </div>`;
 }
 const appPath = () => location.pathname.replace(/(index\.html|install(\.html)?)$/i, '');
@@ -1608,9 +1821,9 @@ function closeGuide() { $('installSheet').hidden = true; }
 const showTip = () => (IS_IOS || IS_ANDROID) && !isStandalone() && !justInstalled && !store.get('tipDone') && !isOffline();
 function tipHTML() {
   if (!showTip()) return '';
-  return `<div class="tip span2" role="note"><div class="tip-text"><b>Add Gridpoint to your Home Screen.</b> It opens like an app and works offline.</div>${installEvt
-    ? '<button class="tip-btn" data-install-go>Install</button>'
-    : '<button class="tip-btn" data-install>Show me</button>'}<button class="tip-x" data-tip-x aria-label="Don’t show this again">${ui('close')}</button></div>`;
+  return `<div class="tip span2" role="note"><div class="tip-text"><b>${esc($t('Add Gridpoint to your Home Screen.'))}</b> ${esc($t('It opens like an app and works offline.'))}</div>${installEvt
+    ? `<button class="tip-btn" data-install-go>${esc($t('Install'))}</button>`
+    : `<button class="tip-btn" data-install>${esc($t('Show me'))}</button>`}<button class="tip-x" data-tip-x aria-label="${esc($t('Don’t show this again'))}">${ui('close')}</button></div>`;
 }
 async function promptInstall() {
   const e = installEvt;
@@ -1632,10 +1845,10 @@ async function shareApp(btn) {
   const url = new URL(appPath() || '/', location.href).href;
   const lbl = btn.querySelector('.lbl');
   if (navigator.share) {
-    try { await navigator.share({ title: 'Gridpoint', text: 'The official National Weather Service forecast for your exact spot, with live station readings.', url }); return; }
+    try { await navigator.share({ title: 'Gridpoint', text: $t('The official National Weather Service forecast for your exact spot, with live station readings.'), url }); return; }
     catch (e) { if (e && e.name === 'AbortError') return; }
   }
-  try { await navigator.clipboard.writeText(url); if (lbl) lbl.textContent = 'Link copied'; }
+  try { await navigator.clipboard.writeText(url); if (lbl) lbl.textContent = $t('Link copied'); }
   catch (e) { if (lbl) lbl.textContent = url; }
 }
 const wantsGuide = () => /^#install$/i.test(location.hash) || /\/install(\.html)?$/i.test(location.pathname);
@@ -1644,12 +1857,64 @@ function routeGuide() {
   try { history.replaceState(null, '', appPath() + location.search); } catch (e) {}
   openGuide();
 }
+/* ============================== language picker ============================== */
+let langBusy = false;
+function langHTML() {
+  const tags = deviceTags(), devOk = tags.some(t => matchLang(t));
+  let names = null;
+  try { names = new Intl.DisplayNames([LOCALE()], { type: 'language' }); } catch (e) {}
+  const nameIn = code => { try { return names ? cap(names.of(code)) : ''; } catch (e) { return ''; } };
+  const row = (code, label, sub, lang) => `<button class="lang-row${state.lang === code ? ' on' : ''}" data-set-lang="${code}" role="radio" aria-checked="${state.lang === code}"${lang ? ` lang="${lang}"` : ''}>
+      <span class="lang-text"><span class="lang-main">${esc(label)}</span>${sub ? `<span class="lang-sub"${lang ? ` lang="${LANG()}"` : ''}>${esc(sub)}</span>` : ''}</span>
+      <span class="lang-check" aria-hidden="true">${state.lang === code ? (langBusy ? '…' : '✓') : ''}</span></button>`;
+  const autoSub = devOk ? $t('Matches this device: {name}', { name: langName(deviceLang()) }) : $t('This device’s language isn’t available yet, so Gridpoint uses English.');
+  const failed = LANG() !== 'en' && !PACK && !langBusy;
+  return `<div class="panel install-panel lang-panel" role="dialog" aria-modal="true" aria-labelledby="lang-title" tabindex="-1">
+    <div class="ig-top"><span class="ig-glyph">${GL.globe}</span><h2 class="ig-title" id="lang-title">${esc($t('Language'))}</h2><button class="xbtn" data-close-lang aria-label="${esc($t('Close'))}">${ui('close')}</button></div>
+    ${failed ? `<p class="bug-err">${esc($t('Couldn’t download this language. Check your connection and try again.'))}</p>` : ''}
+    <div class="lang-list" role="radiogroup" aria-labelledby="lang-title">
+      ${row('auto', $t('Automatic'), autoSub)}
+      ${LANGS.map(([code, own]) => row(code, own, code === LANG() ? '' : nameIn(code), code)).join('')}
+    </div>
+    <p class="note">${esc($t('Forecast paragraphs, alert details and the forecasters’ discussion come from the National Weather Service in English only, so they stay in English.'))}</p>
+  </div>`;
+}
+function renderLangSheet() { $('langSheet').innerHTML = langHTML(); }
+function openLang() {
+  renderLangSheet();
+  $('langSheet').hidden = false;
+  const p = $('langSheet').querySelector('.panel');
+  if (p) { p.scrollTop = 0; try { p.focus({ preventScroll: true }); } catch (e) {} }
+}
+function closeLang() { $('langSheet').hidden = true; }
+/* everything on screen again, in the language now in use */
+function rerenderAll() {
+  $('sidebar').innerHTML = '';
+  $('placesSheet').innerHTML = '';
+  render();
+  if (!$('placesSheet').hidden) renderPlacesSheet();
+  if (!$('installSheet').hidden) renderInstallSheet();
+  if (!$('bugSheet').hidden) $('bugSheet').innerHTML = bugHTML();
+  if (!$('langSheet').hidden) renderLangSheet();
+}
+async function setLanguage(code) {
+  state.lang = code;
+  store.set('lang', code);
+  langBusy = true;
+  renderLangSheet();
+  await applyLang();
+  langBusy = false;
+  rerenderAll();
+}
+window.addEventListener('languagechange', () => { if (state.lang === 'auto') applyLang().then(rerenderAll); });
+
 /* ============================== Report a bug ==============================
    Gridpoint has no server, so a report goes out from the visitor's own email app: the form fills in a
    message to the developer, with details that help reproduce the problem. Nothing is sent until they
    press Send there, and they can leave the details out. */
 const BUG_TO = 'swagmasterfive@emersonxia.lol';
-const BUG_AREAS = ['Search', 'Current conditions', 'Hourly or 10-day forecast', 'Charts', 'Radar', 'Alerts', 'Forecaster discussion', 'Home Screen or offline', 'Something else'];
+/* shown in the visitor's language, sent in English */
+const BUG_AREAS = [tk('Search'), tk('Current conditions'), tk('Hourly or 10-day forecast'), tk('Charts'), tk('Radar'), tk('Alerts'), tk('Forecaster discussion'), tk('Home Screen or offline'), tk('Language'), tk('Something else')];
 const bugDraft = { text: '', area: '', details: true, sent: false };
 function bugDetails() {
   const p = selectedPlace(), m = state.models[p.id], pl = m && m.place, c = m && m.current;
@@ -1664,6 +1929,7 @@ function bugDetails() {
     c ? `Now: ${c.src === 'obs' ? `station ${c.station ? c.station.id : '?'} at ${when(c.t)}` : 'forecast hour (no recent station report)'}` : '',
     m ? `Days 8–11: ${m.ext || 'not loaded'}` : '',
     `Units: ${metric() ? '°C' : '°F'} · ${isOffline() ? 'offline' : 'online'} · ${isStandalone() ? 'installed app' : 'in the browser'}`,
+    `Language: ${LANG()}${state.lang === 'auto' ? ` (automatic; device ${deviceTags().join(', ') || '?'})` : ' (chosen)'}`,
     `Screen: ${innerWidth}×${innerHeight} @${Math.round((window.devicePixelRatio || 1) * 100) / 100}x`,
     `Browser: ${navigator.userAgent}`,
     recentErrors.length ? `Recent errors: ${recentErrors.join(' | ')}` : 'Recent errors: none',
@@ -1677,19 +1943,20 @@ function bugMessage() {
   return { subject, body };
 }
 function bugHTML() {
+  const mail = `<a href="mailto:${BUG_TO}">${BUG_TO}</a>`;
   return `<div class="panel install-panel bug-panel" role="dialog" aria-modal="true" aria-labelledby="bug-title" tabindex="-1">
-    <div class="ig-top"><h2 class="ig-title" id="bug-title">Report a bug</h2><button class="xbtn" data-close-bug aria-label="Close">${ui('close')}</button></div>
-    <p class="ig-lead">Something wrong, missing or confusing? Say what you saw. Your report opens in your email app, addressed to Gridpoint’s developer, so you can read it before you send it.</p>
-    <label class="bug-l" for="bug-text">What went wrong?</label>
-    <textarea id="bug-text" rows="5" placeholder="For example: searching for my town found nothing, or the high for Tuesday doesn’t match weather.gov.">${esc(bugDraft.text)}</textarea>
-    <p class="bug-err" id="bug-err" hidden>Add a sentence about what went wrong first.</p>
-    <label class="bug-l" for="bug-area">Part of the app <span class="bug-opt">(optional)</span></label>
-    <select id="bug-area"><option value="">Choose one</option>${BUG_AREAS.map(a => `<option${a === bugDraft.area ? ' selected' : ''}>${esc(a)}</option>`).join('')}</select>
-    <label class="bug-check"><input type="checkbox" id="bug-details"${bugDraft.details ? ' checked' : ''}> <span>Include details that help find the problem: the place you’re viewing, its NWS forecast area and station, this browser and screen size, and any recent errors.</span></label>
-    <details class="bug-peek"><summary>See exactly what’s included</summary><pre id="bug-pre">${esc(bugDetails())}</pre></details>
-    <div class="bug-actions"><button class="btn1" data-bug-send>Open in email</button><button class="btn2" data-bug-copy><span class="lbl">Copy report</span></button></div>
-    <p class="note" id="bug-after"${bugDraft.sent ? '' : ' hidden'}>If your email app didn’t open, use Copy report and send it to <a href="mailto:${BUG_TO}">${BUG_TO}</a>.</p>
-    <p class="note">Reports go to ${BUG_TO} with the subject “Gridpoint bug report”. Gridpoint itself never sends anything.</p>
+    <div class="ig-top"><h2 class="ig-title" id="bug-title">${esc($t('Report a bug'))}</h2><button class="xbtn" data-close-bug aria-label="${esc($t('Close'))}">${ui('close')}</button></div>
+    <p class="ig-lead">${esc($t('Something wrong, missing or confusing? Say what you saw. Your report opens in your email app, addressed to Gridpoint’s developer, so you can read it before you send it.'))}</p>
+    <label class="bug-l" for="bug-text">${esc($t('What went wrong?'))}</label>
+    <textarea id="bug-text" rows="5" placeholder="${esc($t('For example: searching for my town found nothing, or the high for Tuesday doesn’t match weather.gov.'))}">${esc(bugDraft.text)}</textarea>
+    <p class="bug-err" id="bug-err" hidden>${esc($t('Add a sentence about what went wrong first.'))}</p>
+    <label class="bug-l" for="bug-area">${esc($t('Part of the app'))} <span class="bug-opt">${esc($t('(optional)'))}</span></label>
+    <select id="bug-area"><option value="">${esc($t('Choose one'))}</option>${BUG_AREAS.map(a => `<option value="${esc(a)}"${a === bugDraft.area ? ' selected' : ''}>${esc($t(a))}</option>`).join('')}</select>
+    <label class="bug-check"><input type="checkbox" id="bug-details"${bugDraft.details ? ' checked' : ''}> <span>${esc($t('Include details that help find the problem: the place you’re viewing, its NWS forecast area and station, this browser and screen size, and any recent errors.'))}</span></label>
+    <details class="bug-peek"><summary>${esc($t('See exactly what’s included'))}</summary><pre id="bug-pre" lang="en">${esc(bugDetails())}</pre></details>
+    <div class="bug-actions"><button class="btn1" data-bug-send>${esc($t('Open in email'))}</button><button class="btn2" data-bug-copy><span class="lbl">${esc($t('Copy report'))}</span></button></div>
+    <p class="note" id="bug-after"${bugDraft.sent ? '' : ' hidden'}>${$t('If your email app didn’t open, use Copy report and send it to {mail}.', { mail })}</p>
+    <p class="note">${esc($t('Reports go to {mail} with the subject “Gridpoint bug report”. Gridpoint itself never sends anything.', { mail: BUG_TO }))}</p>
   </div>`;
 }
 function openBug() {
@@ -1718,8 +1985,8 @@ function sendBug() {
 async function copyBug(btn) {
   if (!bugReady()) return;
   const { subject, body } = bugMessage(), lbl = btn.querySelector('.lbl');
-  try { await navigator.clipboard.writeText(`To: ${BUG_TO}\nSubject: ${subject}\n\n${body}`); if (lbl) lbl.textContent = 'Copied'; }
-  catch (e) { if (lbl) lbl.textContent = 'Couldn’t copy'; }
+  try { await navigator.clipboard.writeText(`To: ${BUG_TO}\nSubject: ${subject}\n\n${body}`); if (lbl) lbl.textContent = $t('Copied'); }
+  catch (e) { if (lbl) lbl.textContent = $t('Couldn’t copy'); }
 }
 document.addEventListener('input', e => {
   if (e.target.id === 'bug-text') { bugDraft.text = e.target.value; const err = $('bug-err'); if (err && e.target.value.trim()) err.hidden = true; }
@@ -1733,20 +2000,22 @@ window.addEventListener('appinstalled', () => { installEvt = null; justInstalled
 window.addEventListener('hashchange', routeGuide);
 function renderSidebar() {
   if (updatePanel('side')) return;
+  $('sidebar').setAttribute('aria-label', $t('Places'));
   $('sidebar').innerHTML = placesPanel('side');
 }
 function renderPlacesSheet() {
   if (updatePanel('sheet')) return;
-  $('placesSheet').innerHTML = `<div class="panel places-panel" role="dialog" aria-modal="true" aria-label="Places"><div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="xbtn" data-close aria-label="Close">${ui('close')}</button></div>${placesPanel('sheet')}</div>`;
+  $('placesSheet').innerHTML = `<div class="panel places-panel" role="dialog" aria-modal="true" aria-label="${esc($t('Places'))}"><div style="display:flex;justify-content:flex-end;margin-bottom:6px"><button class="xbtn" data-close aria-label="${esc($t('Close'))}">${ui('close')}</button></div>${placesPanel('sheet')}</div>`;
 }
 
 function barHTML() {
   const place = selectedPlace(), m = state.models[place.id], loading = !!state.loading[place.id];
-  const upd = m && isOffline() ? 'Offline · saved ' + fmtClock(m.fetchedAt, m.place.tz) : loading ? 'Updating…' : m ? 'Updated ' + fmtClock(m.fetchedAt, m.place.tz) : isOffline() ? 'Offline' : '';
-  return `<div class="bar-left"><button class="iconbtn phone-only" data-open-places aria-label="Places">${ui('list')}</button></div>
+  const upd = m && isOffline() ? $t('Offline · saved {time}', { time: fmtClock(m.fetchedAt, m.place.tz) }) : loading ? $t('Updating…') : m ? $t('Updated {time}', { time: fmtClock(m.fetchedAt, m.place.tz) }) : isOffline() ? $t('Offline') : '';
+  return `<div class="bar-left"><button class="iconbtn phone-only" data-open-places aria-label="${esc($t('Places'))}">${ui('list')}</button></div>
     <div class="bar-right"><span class="updated" aria-live="polite">${esc(upd)}</span>
-      <button class="iconbtn" data-refresh aria-label="Refresh"><span class="${loading ? 'spin' : ''}" style="display:inline-flex">${ui('refresh')}</span></button>
-      <div class="seg" role="group" aria-label="Units"><button data-units="us" aria-pressed="${!metric()}">°F</button><button data-units="metric" aria-pressed="${metric()}">°C</button></div></div>`;
+      <button class="iconbtn" data-refresh aria-label="${esc($t('Refresh'))}"><span class="${loading ? 'spin' : ''}" style="display:inline-flex">${ui('refresh')}</span></button>
+      <button class="iconbtn langbtn" data-lang aria-label="${esc($t('Language'))}: ${esc(langName(LANG()))}" title="${esc($t('Language'))}">${ui('globe')}</button>
+      <div class="seg" role="group" aria-label="${esc($t('Units'))}"><button data-units="us" aria-pressed="${!metric()}">°F</button><button data-units="metric" aria-pressed="${metric()}">°C</button></div></div>`;
 }
 function renderBar() { const b = document.querySelector('.bar'); if (b) b.innerHTML = barHTML(); }
 
@@ -1770,54 +2039,55 @@ function renderMain() {
   if (!m) {
     if (err) {
       setSky('ovc', true);
-      main.innerHTML = `<div class="bar">${barHTML()}</div><div class="state"><h2>${esc(place.name)}</h2>${err === 'outside'
-        ? `<p>weather.gov only covers U.S. locations, so there's no forecast for this place.</p>`
-        : `<p>Couldn't reach weather.gov. Check your connection, then try again.</p>`}<button class="iconbtn" data-refresh>Try again</button></div>`;
+      main.innerHTML = `<div class="bar">${barHTML()}</div><div class="state"><h2>${esc(place.id === 'here' ? $t('My Location') : place.name)}</h2>${err === 'outside'
+        ? `<p>${esc($t("weather.gov only covers U.S. locations, so there's no forecast for this place."))}</p>`
+        : `<p>${esc($t("Couldn't reach weather.gov. Check your connection, then try again."))}</p>`}<button class="iconbtn" data-refresh>${esc($t('Try again'))}</button></div>`;
     } else {
-      main.innerHTML = `<div class="bar">${barHTML()}</div><div class="hero"><div class="hero-place">${esc(place.name)}</div><div class="hero-temp">--</div><div class="hero-cond">Loading NOAA data…</div></div>
+      main.innerHTML = `<div class="bar">${barHTML()}</div><div class="hero"><div class="hero-place">${esc(place.id === 'here' ? $t('My Location') : place.name)}</div><div class="hero-temp">--</div><div class="hero-cond">${esc($t('Loading NOAA data…'))}</div></div>
         <div class="content"><div class="skel span2" style="height:150px"></div><div class="skel" style="height:420px"></div><div class="skel" style="height:420px"></div></div>`;
     }
     return;
   }
   const c = m.current, tz = m.place.tz, dayNow = isDayNow(m);
   setSky(c ? c.code : 'sct', dayNow);
-  const heroSrc = c && c.src === 'obs'
-    ? `Measured ${esc(fmtClock(c.t, tz))} at ${esc(stationLabel(c.station))}`
-    : c && c.staleAt ? `Last station reading ${esc(fmtWhen(c.staleAt, tz))} · showing the forecast for this hour`
-    : `Station reading unavailable · showing forecast for this hour`;
-  const saved = err ? `<div class="notice span2">${isOffline() ? 'You’re offline.' : 'Couldn’t refresh just now.'} Showing the forecast saved ${esc(fmtWhen(m.fetchedAt, tz))}. It updates on its own when the connection is back.</div>` : '';
+  const heroSrc = esc(c && c.src === 'obs'
+    ? $t('Measured {time} at {station}', { time: fmtClock(c.t, tz), station: stationLabel(c.station) })
+    : c && c.staleAt ? $t('Last station reading {when} · showing the forecast for this hour', { when: fmtWhen(c.staleAt, tz) })
+    : $t('Station reading unavailable · showing forecast for this hour'));
+  const saved = err ? `<div class="notice span2">${esc(isOffline() ? $t('You’re offline.') : $t('Couldn’t refresh just now.'))} ${esc($t('Showing the forecast saved {when}. It updates on its own when the connection is back.', { when: fmtWhen(m.fetchedAt, tz) }))}</div>` : '';
   const here = place.id === 'here' && m.place.city;
   const hero = `<header class="hero">
-      ${here ? '<div class="hero-src" style="margin:0 0 2px">My Location</div>' : ''}
-      <div class="hero-place">${esc(here ? m.place.city : place.name)}</div>
-      <div class="hero-temp" aria-label="${c ? Math.round(tDisp(c.tempF)) + ' degrees' : ''}">${c ? fmtT(c.tempF) : '--'}</div>
-      <div class="hero-cond">${c ? esc(c.text) : ''}</div>
-      <div class="hero-hilo">${m.today ? `H:${fmtT(m.today.hi)}&nbsp;&nbsp;L:${fmtT(m.today.lo)}` : ''}</div>
+      ${here ? `<div class="hero-src" style="margin:0 0 2px">${esc($t('My Location'))}</div>` : ''}
+      <div class="hero-place">${esc(here ? m.place.city : place.id === 'here' ? $t('My Location') : place.name)}</div>
+      <div class="hero-temp" aria-label="${c ? esc($t('{n} degrees', { n: Math.round(tDisp(c.tempF)) })) : ''}">${c ? fmtT(c.tempF) : '--'}</div>
+      <div class="hero-cond">${c ? esc(condText(c.text, c.code, null, dayNow)) : ''}</div>
+      <div class="hero-hilo">${m.today ? `${esc($t('H:{t}', { t: fmtT(m.today.hi) }))}&nbsp;&nbsp;${esc($t('L:{t}', { t: fmtT(m.today.lo) }))}` : ''}</div>
       <div class="hero-src">${heroSrc}</div></header>`;
   main.innerHTML = `<div class="bar">${barHTML()}</div>${hero}<div class="content">
       ${saved}${m.alerts.map(alertCard).join('')}
-      ${m.notices.map(n => `<div class="notice span2">${esc(n)}</div>`).join('')}
+      ${m.notices.map(n => `<div class="notice span2">${esc($t(n))}</div>`).join('')}
       ${tipHTML()}
       ${hourlyCard(m)}
       <div class="stack">${dailyCard(m)}${radarCard(m)}</div>
       <div class="stack"><div class="tiles">${tiles(m)}</div>${afdCard(m)}</div>
       ${sourcesCard(m)}
-    </div>${aboutHTML(' about-main')}<div class="foot">Gridpoint · NOAA data, no account, no ads · <button class="footlink" data-bug>Report a bug</button></div>`;
+    </div>${aboutHTML(' about-main')}<div class="foot">${esc($t('Gridpoint · NOAA data, no account, no ads'))} · <button class="footlink" data-bug>${esc($t('Report a bug'))}</button></div>`;
 }
 function stationLabel(s) {
   if (!s) return '';
   const name = String(s.name || '').split(',').pop().trim();
-  return `${name} (${s.id})${isNum(s.dist) ? ', ' + fmtDist(s.dist) + ' away' : ''}`;
+  return `${name} (${s.id})${isNum(s.dist) ? ', ' + $t('{dist} away', { dist: fmtDist(s.dist) }) : ''}`;
 }
 function alertCard(a, idx) {
   const col = a.severity === 'Extreme' || a.severity === 'Severe' ? 'var(--sev-extreme)' : a.severity === 'Moderate' ? 'var(--sev-moderate)' : 'var(--sev-minor)';
   const m = state.models[state.selected], tz = m.place.tz;
-  const until = a.ends ? 'Until ' + fmtWhen(Date.parse(a.ends), tz) : '';
+  const until = a.ends ? $t('Until {when}', { when: fmtWhen(Date.parse(a.ends), tz) }) : '';
   const open = state.openAlert === a.id;
+  const sev = { Extreme: tk('Extreme'), Severe: tk('Severe'), Moderate: tk('Moderate'), Minor: tk('Minor'), Unknown: tk('Unknown') }[a.severity] || tk('Alert');
   return `<section class="card alert span2"><button class="alert-btn" data-alert="${esc(a.id)}" aria-expanded="${open}">
-      <div class="alert-top"><span class="dotsev" style="background:${col}"></span>${esc(a.severity || 'Alert')} · ${esc(a.sender || 'NWS')}</div>
-      <div class="alert-title">${esc(a.event)}</div><div class="alert-sub">${esc(until)}${open ? '' : ' · Tap for details'}</div></button>
-      ${open ? `<div class="alert-body">${esc(a.description || '')}${a.instruction ? `<h4>What to do</h4>${esc(a.instruction)}` : ''}</div>` : ''}</section>`;
+      <div class="alert-top"><span class="dotsev" style="background:${col}"></span>${esc($t(sev))} · ${esc(a.sender || 'NWS')}</div>
+      <div class="alert-title">${esc(alertName(a.event))}</div><div class="alert-sub">${esc(until)}${open ? '' : ' · ' + esc($t('Tap for details'))}</div></button>
+      ${open ? `<div class="alert-body">${PACK ? `<div class="en-note">${esc($t('Alert text from the National Weather Service, in English.'))}</div>` : ''}${enText(esc(a.description || ''))}${a.instruction ? `<h4>${esc($t('What to do'))}</h4>${enText(esc(a.instruction))}` : ''}</div>` : ''}</section>`;
 }
 function sunEvents(m, from, to) {
   const out = [], tz = m.place.tz;
@@ -1837,14 +2107,18 @@ function hourlyCard(m) {
     const isNow = i === 0 && h.t <= now;
     const code = isNow && c ? c.code : h.code;
     const day = isNow ? isDayNow(m) : h.isDay;
-    items.push({ t: h.t, html: `<div class="hr${h.src === 'NBM' ? ' nbm' : ''}"><div class="t">${isNow ? 'Now' : esc(fmtHourLbl(h.t, tz))}</div><div class="ic">${wi(iconId(code, day, h.pop))}${round10(h.pop) >= 20 ? `<div class="p">${round10(h.pop)}%</div>` : ''}</div><div class="v">${fmtT(isNow && c ? c.tempF : h.tempF)}</div></div>` });
+    items.push({ t: h.t, html: `<div class="hr${h.src === 'NBM' ? ' nbm' : ''}"><div class="t">${isNow ? esc($t('Now')) : esc(fmtHourLbl(h.t, tz))}</div><div class="ic">${wi(iconId(code, day, h.pop))}${round10(h.pop) >= 20 ? `<div class="p">${round10(h.pop)}%</div>` : ''}</div><div class="v">${fmtT(isNow && c ? c.tempF : h.tempF)}</div></div>` });
   });
   for (const e of sunEvents(m, now, hrs[hrs.length - 1].t + HOUR)) {
-    items.push({ t: e.t, html: `<div class="hr sun"><div class="t">${esc(fmtClockTight(e.t, tz))}</div><div class="ic">${wi(e.type)}</div><div class="v">${e.type === 'sunrise' ? 'Sunrise' : 'Sunset'}</div></div>` });
+    items.push({ t: e.t, html: `<div class="hr sun"><div class="t">${esc(fmtClockTight(e.t, tz))}</div><div class="ic">${wi(e.type)}</div><div class="v">${esc(sunWord(e.type === 'sunrise'))}</div></div>` });
   }
   items.sort((a, b) => a.t - b.t);
-  const sum = m.summary ? `${esc(m.summary.name)}: ${esc(m.summary.text)}` : esc((c && c.text) || '');
-  return `<section class="card span2"><div class="summary">${sum}</div><div class="hours" tabindex="0" aria-label="Hourly forecast">${items.map(x => x.html).join('')}</div></section>`;
+  const s = m.summary;
+  /* NWS writes this paragraph in English only; in another language, say the same things in a short line of our own */
+  const sum = !s ? esc(condText((c && c.text) || '', c && c.code, null, isDayNow(m)))
+    : !PACK || !s.short ? `${esc(s.name)}: ${enText(esc(s.text))}`
+    : esc(`${periodName(s.name)}: ${condText(s.short, s.code, s.pop, s.day)} · ${$t(s.day ? tk('High {t}') : tk('Low {t}'), { t: fmtT(s.temp) })}${round10(s.pop) >= 20 ? ' · ' + $t('{p}% chance of precipitation', { p: round10(s.pop) }) : ''}`);
+  return `<section class="card span2"><div class="summary">${sum}</div><div class="hours" tabindex="0" aria-label="${esc($t('Hourly forecast'))}">${items.map(x => x.html).join('')}</div></section>`;
 }
 function dailyCard(m) {
   const tz = m.place.tz, today = ymd(Date.now(), tz), rows = m.daily;
@@ -1857,7 +2131,7 @@ function dailyCard(m) {
   for (const r of rows) {
     if (r.src === 'NBM' && !shownNbm && nNws) {
       shownNbm = true;
-      html += `<div class="xdiv"><span class="tag">${extTag(m)}</span> Extended outlook · ${esc(extName(m))}</div><div class="xnote">Days past the official forecast, straight from NOAA's model guidance. No forecaster has adjusted these.</div>`;
+      html += `<div class="xdiv"><span class="tag">${extTag(m)}</span> ${esc($t('Extended outlook'))} · ${esc(extName(m))}</div><div class="xnote">${esc($t("Days past the official forecast, straight from NOAA's model guidance. No forecaster has adjusted these."))}</div>`;
     }
     const lo = isNum(r.lo) ? r.lo : r.hi, hi = isNum(r.hi) ? r.hi : r.lo;
     let bar = '<div class="track"></div>';
@@ -1868,60 +2142,63 @@ function dailyCard(m) {
       bar = `<div class="track"><div class="segm" style="left:${a.toFixed(1)}%;width:${Math.max(2, b - a).toFixed(1)}%;background:${grad}"></div>${dot}</div>`;
     }
     const pop = round10(r.pop);
-    const label = r.date === today ? 'Today' : weekdayShort(r.date);
-    html += `<button class="day" data-day="${r.date}" aria-label="${esc(label)}: ${esc(r.text)}, high ${fmtT(r.hi)}, low ${fmtT(r.lo)}">
-      <div class="dn">${label}</div>
+    const label = r.date === today ? todayShort() : weekdayShort(r.date);
+    html += `<button class="day" data-day="${r.date}" aria-label="${esc($t('{day}: {text}, high {hi}, low {lo}', { day: r.date === today ? $t('Today') : weekdayLong(r.date), text: condText(r.text, r.code, r.pop, r.isDay !== false), hi: fmtT(r.hi), lo: fmtT(r.lo) }))}">
+      <div class="dn">${esc(label)}</div>
       <div class="di">${wi(iconId(r.code, r.isDay !== false, r.pop))}${pop >= 20 ? `<div class="p">${pop}%</div>` : ''}</div>
-      <div class="lo${r.loEst ? ' est' : ''}" ${r.loEst ? `title="Low from the ${esc(extName(m))}"` : ''}>${isNum(r.lo) ? fmtT(r.lo) : ''}</div>${bar}<div class="hi">${isNum(r.hi) ? fmtT(r.hi) : ''}</div></button>`;
+      <div class="lo${r.loEst ? ' est' : ''}" ${r.loEst ? `title="${esc($t('Low from the {name}', { name: extName(m) }))}"` : ''}>${isNum(r.lo) ? fmtT(r.lo) : ''}</div>${bar}<div class="hi">${isNum(r.hi) ? fmtT(r.hi) : ''}</div></button>`;
   }
-  return `<section class="card"><div class="card-h">${ui('cal')} ${rows.length}-day forecast<span class="right">Tap a day</span></div><div class="rule"></div><div class="days">${html}</div></section>`;
+  /* room for the longest day name in this language */
+  const dn = Math.max(58, Math.min(112, Math.ceil(Math.max(...rows.map(r => textWidth(r.date === today ? todayShort() : weekdayShort(r.date), '500 17px')))) + 3));
+  return `<section class="card"><div class="card-h">${ui('cal')} ${esc($t('{n}-day forecast', { n: rows.length }))}<span class="right">${esc($t('Tap a day'))}</span></div><div class="rule"></div><div class="days" style="--dn:${dn}px">${html}</div></section>`;
 }
 function tiles(m) {
   const c = m.current, tz = m.place.tz, now = Date.now();
   if (!c) return '';
   const T = [];
   const add = (html, wide = false) => T.push({ html, wide });
-  const tile = (icon, label, inner, wide) => `<section class="card tile${wide ? ' wide' : ''}"><div class="card-h">${ui(icon)} ${label}</div>${inner}</section>`;
+  const tile = (icon, label, inner, wide) => `<section class="card tile${wide ? ' wide' : ''}"><div class="card-h">${ui(icon)} <span class="lbl">${esc(label)}</span></div>${inner}</section>`;
   // feels like
   const d = isNum(c.feelsF) && isNum(c.tempF) ? c.feelsF - c.tempF : 0;
-  const feelsMsg = Math.abs(d) < 2 ? 'Similar to the actual temperature.' : d < 0 ? 'Wind is making it feel colder.' : 'Humidity is making it feel warmer.';
-  add(w => tile('temp', 'Feels like', `<div class="big">${fmtT(c.feelsF)}</div><div class="small">${feelsMsg}</div>`, w));
+  const feelsMsg = Math.abs(d) < 2 ? $t('Similar to the actual temperature.') : d < 0 ? $t('Wind is making it feel colder.') : $t('Humidity is making it feel warmer.');
+  add(w => tile('temp', $t('Feels like'), `<div class="big">${fmtT(c.feelsF)}</div><div class="small">${esc(feelsMsg)}</div>`, w));
   // humidity
-  add(w => tile('humid', 'Humidity', `<div class="big">${isNum(c.rh) ? Math.round(c.rh) + '%' : '--'}</div><div class="small">${isNum(c.dewF) ? `The dew point is ${fmtT(c.dewF)} right now.` : ''}</div>`, w));
+  add(w => tile('humid', $t('Humidity'), `<div class="big">${isNum(c.rh) ? Math.round(c.rh) + '%' : '--'}</div><div class="small">${isNum(c.dewF) ? esc($t('The dew point is {t} right now.', { t: fmtT(c.dewF) })) : ''}</div>`, w));
   // wind (always wide)
-  add(w => tile('wind', 'Wind', `<div class="windwrap">${compass(c.dir, c.windMph)}<dl class="kv" style="flex:1"><dt>Wind</dt><dd>${fmtWind(c.windMph)}</dd><dt>Gusts</dt><dd>${isNum(c.gustMph) ? fmtWind(c.gustMph) : '—'}</dd><dt>Direction</dt><dd>${isNum(c.dir) ? `${Math.round(c.dir)}° ${degToDir(c.dir)}` : c.windMph >= 1 ? 'Variable' : 'Calm'}</dd></dl></div>`, w), true);
+  add(w => tile('wind', $t('Wind'), `<div class="windwrap">${compass(c.dir, c.windMph)}<dl class="kv" style="flex:1"><dt>${esc($t('Wind'))}</dt><dd>${fmtWind(c.windMph)}</dd><dt>${esc($t('Gusts'))}</dt><dd>${isNum(c.gustMph) ? fmtWind(c.gustMph) : '—'}</dd><dt>${esc($t('Direction'))}</dt><dd>${isNum(c.dir) ? `${Math.round(c.dir)}° ${esc(dirLabel(c.dir))}` : esc(c.windMph >= 1 ? $t('Variable') : $t('Calm'))}</dd></dl></div>`, w), true);
   // precipitation next 24h
   const next = m.hourly.filter(h => h.t >= now - HOUR && h.t < now + 24 * HOUR);
   const qpf = next.reduce((s, h) => s + (isNum(h.qpf) ? h.qpf : 0), 0);
   const snow = next.reduce((s, h) => s + (isNum(h.snow) ? h.snow : 0), 0);
   const peak = next.reduce((b, h) => (!b || h.pop > b.pop ? h : b), null);
-  const precipMsg = peak && peak.pop >= 20 ? `Highest chance: ${round10(peak.pop)}% around ${fmtHourLbl(peak.t, tz)}.` : 'No meaningful chance in the next 24 hours.';
-  add(w => tile('drop', 'Precipitation', `<div class="big">${fmtPrecip(qpf)}</div><div class="muted" style="font-size:13px;margin-top:2px">Next 24 h${snow >= 0.05 ? ' · ' + fmtSnow(snow) + ' snow' : ''}</div><div class="small">${precipMsg}</div>`, w));
+  const precipMsg = peak && peak.pop >= 20 ? $t('Highest chance: {p}% around {time}.', { p: round10(peak.pop), time: fmtHourLbl(peak.t, tz) }) : $t('No meaningful chance in the next 24 hours.');
+  add(w => tile('drop', $t('Precipitation'), `<div class="big">${fmtPrecip(qpf)}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc($t('Next 24 h'))}${snow >= 0.05 ? ' · ' + esc($t('{amt} snow', { amt: fmtSnow(snow) })) : ''}</div><div class="small">${esc(precipMsg)}</div>`, w));
   // visibility
   if (isNum(c.visMi)) {
-    const vm = c.visMi >= 9.95 ? 'Perfectly clear view.' : c.visMi >= 5 ? 'Good visibility.' : c.visMi >= 1 ? 'Haze, fog or precipitation is cutting visibility.' : 'Very poor visibility.';
-    add(w => tile('eye', 'Visibility', `<div class="big">${fmtVis(c.visMi)}</div><div class="small">${vm}</div>`, w));
+    const vm = c.visMi >= 9.95 ? $t('Perfectly clear view.') : c.visMi >= 5 ? $t('Good visibility.') : c.visMi >= 1 ? $t('Haze, fog or precipitation is cutting visibility.') : $t('Very poor visibility.');
+    add(w => tile('eye', $t('Visibility'), `<div class="big">${fmtVis(c.visMi)}</div><div class="small">${esc(vm)}</div>`, w));
   }
   // pressure
   if (isNum(c.pressure)) {
-    const tr = c.pTrend, tmsg = !isNum(tr) ? 'Trend unavailable.' : tr > 0.06 ? 'Rising quickly over the last 3 hours.' : tr > 0.02 ? 'Rising over the last 3 hours.' : tr < -0.06 ? 'Falling quickly over the last 3 hours.' : tr < -0.02 ? 'Falling over the last 3 hours.' : 'Steady over the last 3 hours.';
-    add(w => tile('gauge', 'Pressure', `${pressureGauge(c.pressure, tr)}<div class="small" style="text-align:center">${fmtPress(c.pressure)} · ${tmsg}</div>`, w));
+    const tr = c.pTrend, tmsg = !isNum(tr) ? $t('Trend unavailable.') : tr > 0.06 ? $t('Rising quickly over the last 3 hours.') : tr > 0.02 ? $t('Rising over the last 3 hours.') : tr < -0.06 ? $t('Falling quickly over the last 3 hours.') : tr < -0.02 ? $t('Falling over the last 3 hours.') : $t('Steady over the last 3 hours.');
+    add(w => tile('gauge', $t('Pressure'), `${pressureGauge(c.pressure, tr)}<div class="small" style="text-align:center">${fmtPress(c.pressure)} · ${esc(tmsg)}</div>`, w));
   }
   // moon, with exact phase times
   const mi = moonIllum(now), nxt = nextPhases(now, 2);
-  add(w => tile('moon', 'Moon', `<div style="display:flex;align-items:center;gap:12px;margin-top:8px">${moonDisc(mi.phase, 52)}<div><div style="font-size:18px;font-weight:600">${phaseName(mi.phase)}</div><div class="muted" style="font-size:13px">${Math.round(mi.fraction * 100)}% illuminated</div></div></div><div class="small">${nxt.map(p => `${p.name}: ${esc(dtf(tz, { month: 'short', day: 'numeric' }).format(p.t))}, ${esc(fmtClock(p.t, tz))}`).join('<br>')}</div>`, w));
+  add(w => tile('moon', $t('Moon'), `<div class="moonrow">${moonDisc(mi.phase, 52)}<div><div class="ph">${esc($t(phaseName(mi.phase)))}</div><div class="muted" style="font-size:13px">${esc($t('{p}% illuminated', { p: Math.round(mi.fraction * 100) }))}</div></div></div><div class="small">${nxt.map(p => `${esc($t(p.name))}: ${esc(dtf(tz, { month: 'short', day: 'numeric' }).format(p.t))}, ${esc(fmtClock(p.t, tz))}`).join('<br>')}</div>`, w));
   // sun (always wide)
   const st = sunTimes(dayNoon(ymd(now, tz), tz), m.place.lat, m.place.lon);
   const tom = sunTimes(dayNoon(addDays(ymd(now, tz), 1), tz), m.place.lat, m.place.lon);
-  let rise = st.rise, set = st.set, head = 'Sunrise', when = 'Today';
-  if (st.rise && now >= st.set) { rise = tom.rise; set = tom.set; when = 'Tomorrow'; }
+  let rise = st.rise, set = st.set, head = 'Sunrise', when = 'today';
+  if (st.rise && now >= st.set) { rise = tom.rise; set = tom.set; when = 'tomorrow'; }
   if (st.rise && now >= st.rise && now < st.set) head = 'Sunset';
   const len = rise && set ? set - rise : null;
+  const headWhen = { Sunrisetoday: tk('Sunrise today'), Sunrisetomorrow: tk('Sunrise tomorrow'), Sunsettoday: tk('Sunset today'), Sunsettomorrow: tk('Sunset tomorrow') }[head + when];
   const sunInner = rise && set
-    ? `<div class="sunrow"><div><div class="big">${esc(fmtClock(head === 'Sunset' ? set : rise, tz))}</div><div class="muted" style="font-size:13px;margin-top:2px">${head} ${when.toLowerCase()}</div></div>${sunArc(m)}</div>
-       <dl class="kv"><dt>Sunrise</dt><dd>${esc(fmtClock(rise, tz))}</dd><dt>Sunset</dt><dd>${esc(fmtClock(set, tz))}</dd><dt>Daylight</dt><dd>${Math.floor(len / HOUR)}h ${Math.round((len % HOUR) / 60000)}m</dd></dl>`
-    : '<div class="small">The sun doesn’t rise or set here today.</div>';
-  add(w => tile('sun', head, sunInner, w), true);
+    ? `<div class="sunrow"><div><div class="big">${esc(fmtClock(head === 'Sunset' ? set : rise, tz))}</div><div class="muted" style="font-size:13px;margin-top:2px">${esc($t(headWhen))}</div></div>${sunArc(m)}</div>
+       <dl class="kv"><dt>${esc($t('Sunrise'))}</dt><dd>${esc(fmtClock(rise, tz))}</dd><dt>${esc($t('Sunset'))}</dt><dd>${esc(fmtClock(set, tz))}</dd><dt>${esc($t('Daylight'))}</dt><dd>${esc($t('{h}h {m}m', { h: Math.floor(len / HOUR), m: Math.round((len % HOUR) / 60000) }))}</dd></dl>`
+    : `<div class="small">${esc($t('The sun doesn’t rise or set here today.'))}</div>`;
+  add(w => tile('sun', head === 'Sunset' ? $t('Sunset') : $t('Sunrise'), sunInner, w), true);
   /* keep the two-column grid full: an odd count of narrow tiles widens the last one */
   const narrow = T.filter(t => !t.wide);
   if (narrow.length % 2) narrow[narrow.length - 1].wide = true;
@@ -1933,7 +2210,7 @@ function compass(dir, mph) {
     const r1 = a % 90 === 0 ? 43 : a % 30 === 0 ? 46 : 49, ra = (a - 90) * RAD;
     s += `<line x1="${(60 + Math.cos(ra) * r1).toFixed(1)}" y1="${(60 + Math.sin(ra) * r1).toFixed(1)}" x2="${(60 + Math.cos(ra) * 52).toFixed(1)}" y2="${(60 + Math.sin(ra) * 52).toFixed(1)}" stroke="rgba(255,255,255,${a % 30 === 0 ? .5 : .22})" stroke-width="1.4"/>`;
   }
-  s += '<g font-size="10" font-weight="700" fill="rgba(255,255,255,.75)" text-anchor="middle"><text x="60" y="27">N</text><text x="96" y="64">E</text><text x="60" y="101">S</text><text x="24" y="64">W</text></g>';
+  s += `<g font-size="10" font-weight="700" fill="rgba(255,255,255,.75)" text-anchor="middle"><text x="60" y="27">${esc($t('N'))}</text><text x="96" y="64">${esc($t('E'))}</text><text x="60" y="101">${esc($t('S'))}</text><text x="24" y="64">${esc($t('W'))}</text></g>`;
   if (isNum(dir)) s += `<g transform="rotate(${dir} 60 60)"><line x1="60" y1="12" x2="60" y2="100" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="12" r="4" fill="#fff"/><path d="M52 94 60 108 68 94Z" fill="#fff"/></g>`;
   s += `<circle cx="60" cy="60" r="19" fill="rgba(20,30,48,.85)"/><text x="60" y="61" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">${isNum(mph) ? Math.round(windDisp(mph)) : '–'}</text><text x="60" y="73" text-anchor="middle" font-size="8.5" font-weight="700" fill="rgba(255,255,255,.7)">${windUnit()}</text></svg>`;
   return s;
@@ -1949,7 +2226,7 @@ function pressureGauge(v, tr) {
   const an = ang(a0 + (a1 - a0) * f);
   s += `<line x1="${(60 + Math.cos(an) * 36).toFixed(1)}" y1="${(56 + Math.sin(an) * 36).toFixed(1)}" x2="${(60 + Math.cos(an) * 53).toFixed(1)}" y2="${(56 + Math.sin(an) * 53).toFixed(1)}" stroke="#fff" stroke-width="4" stroke-linecap="round"/>`;
   const arrow = !isNum(tr) || Math.abs(tr) <= 0.02 ? '<path d="M50 56h20" stroke="#fff" stroke-width="3" stroke-linecap="round"/>' : tr > 0 ? '<path d="M60 66V46M52 54l8-8 8 8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' : '<path d="M60 46v20M52 58l8 8 8-8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
-  return s + arrow + `<text x="22" y="90" font-size="9" fill="rgba(255,255,255,.6)" font-weight="700">Low</text><text x="84" y="90" font-size="9" fill="rgba(255,255,255,.6)" font-weight="700">High</text></svg>`;
+  return s + arrow + `<text x="22" y="90" font-size="9" fill="rgba(255,255,255,.6)" font-weight="700">${esc($t('Low'))}</text><text x="104" y="90" text-anchor="end" font-size="9" fill="rgba(255,255,255,.6)" font-weight="700">${esc($t('High'))}</text></svg>`;
 }
 function sunArc(m) {
   const tz = m.place.tz, now = Date.now(), d = ymd(now, tz), t0 = dayStart(d, tz), t1 = dayStart(addDays(d, 1), tz);
@@ -1982,27 +2259,28 @@ window.gpRadarFail = img => {
   if (!card) return;
   card.classList.add('noimg');
   const msg = card.querySelector('.offmsg');
-  if (msg && navigator.onLine !== false) msg.textContent = 'The radar loop isn’t loading from weather.gov right now. Try the interactive radar, or check back in a few minutes.';
+  if (msg && navigator.onLine !== false) msg.textContent = $t('The radar loop isn’t loading from weather.gov right now. Try the interactive radar, or check back in a few minutes.');
 };
 function radarCard(m) {
   const id = m.place.radar;
   if (!id) return '';
   const bust = Math.floor(Date.now() / (5 * 60e3));
-  return `<section class="card radar${isOffline() ? ' noimg' : ''}"><div class="card-h">${ui('radar')} Radar · ${esc(id)}<span class="right"><a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener">Interactive ↗</a></span></div>
-    <a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener"><img src="https://radar.weather.gov/ridge/standard/${esc(id)}_loop.gif?t=${bust}" alt="Radar loop from ${esc(id)}" loading="lazy" onerror="gpRadarFail(this)"></a>
-    <div class="offmsg">The radar loop needs a connection. It’ll load when you’re back online.</div>
-    <div class="cap">Base reflectivity loop from the NWS ${esc(id)} radar.</div></section>`;
+  return `<section class="card radar${isOffline() ? ' noimg' : ''}"><div class="card-h">${ui('radar')} ${esc($t('Radar'))} · ${esc(id)}<span class="right"><a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener">${esc($t('Interactive'))} ↗</a></span></div>
+    <a href="https://radar.weather.gov/station/${esc(id.toLowerCase())}/standard" target="_blank" rel="noopener"><img src="https://radar.weather.gov/ridge/standard/${esc(id)}_loop.gif?t=${bust}" alt="${esc($t('Radar loop from {id}', { id }))}" loading="lazy" onerror="gpRadarFail(this)"></a>
+    <div class="offmsg">${esc($t('The radar loop needs a connection. It’ll load when you’re back online.'))}</div>
+    <div class="cap">${esc($t('Base reflectivity loop from the NWS {id} radar.', { id }))}</div></section>`;
 }
 function afdCard(m) {
   const a = m.afd;
   if (!a || !a.sections || !a.sections.length) return '';
   const tz = m.place.tz, open = !!state.afdOpen;
-  const title = n => n.charAt(0) + n.slice(1).toLowerCase();
+  const AFD_NAMES = { 'KEY MESSAGES': tk('Key messages'), UPDATE: tk('Update'), SYNOPSIS: tk('Synopsis'), DISCUSSION: tk('Discussion'), 'SHORT TERM': tk('Short term'), 'LONG TERM': tk('Long term'), 'NEAR TERM': tk('Near term'), OVERVIEW: tk('Overview') };
+  const title = n => { const k = Object.keys(AFD_NAMES).find(x => n.startsWith(x)); return k && PACK ? $t(AFD_NAMES[k]) : n.charAt(0) + n.slice(1).toLowerCase(); };
   let html = '', shown = 0;
   for (const sec of a.sections) {
     const key = /^KEY MESSAGES/.test(sec.name);
     if (!open && !key && shown >= 1) break;
-    html += `<h4>${esc(title(sec.name))}${sec.issued ? `<span>${esc(sec.issued)}</span>` : ''}</h4>`;
+    html += `<h4>${esc(title(sec.name))}${sec.issued ? `<span${PACK ? ' lang="en"' : ''}>${esc(sec.issued)}</span>` : ''}</h4>`;
     if (key || sec.paras.every(p => /^[-*•]\s/.test(p))) {
       /* some offices group key messages under area names ("West Coast and Western Interior...") */
       let items = sec.paras, more = false;
@@ -2011,37 +2289,38 @@ function afdCard(m) {
         for (const p of sec.paras) { const head = /\.\.\.$/.test(p) && p.length < 90; if ((!head && ++n > 5) || (head && n >= 5)) break; keep.push(p); }
         more = keep.length < sec.paras.length; items = keep;
       }
-      html += `<ul>${items.map(p => /\.\.\.$/.test(p) && p.length < 90 ? `<li class="khead">${esc(p.replace(/\.\.\.$/, ''))}</li>` : `<li>${esc(p.replace(/^[-*•]\s*/, ''))}</li>`).join('')}</ul>`;
+      html += `<ul${PACK ? ' lang="en"' : ''}>${items.map(p => /\.\.\.$/.test(p) && p.length < 90 ? `<li class="khead">${esc(p.replace(/\.\.\.$/, ''))}</li>` : `<li>${esc(p.replace(/^[-*•]\s*/, ''))}</li>`).join('')}</ul>`;
       if (more) shown++;
     } else {
       const ps = open ? sec.paras : sec.paras.slice(0, 1);
-      html += ps.map(p => `<p>${esc(p)}</p>`).join('');
+      html += ps.map(p => `<p${PACK ? ' lang="en"' : ''}>${esc(p)}</p>`).join('');
       shown += ps.length;
     }
   }
-  return `<section class="card afd"><div class="card-h">${ui('info')} Forecaster's discussion<span class="right">NWS ${esc(m.place.office)} · ${esc(fmtWhen(a.issued, tz))}</span></div><div class="rule"></div>
-    <div class="afd-body">${html}</div><button class="textbtn morebtn" data-afd aria-expanded="${open}">${open ? 'Show less' : 'Read the full discussion'}</button></section>`;
+  return `<section class="card afd"><div class="card-h">${ui('info')} ${esc($t("Forecaster's discussion"))}<span class="right">NWS ${esc(m.place.office)} · ${esc(fmtWhen(a.issued, tz))}</span></div><div class="rule"></div>
+    ${PACK ? `<div class="en-note" style="margin-top:8px">${esc($t('Written by the forecasters at the National Weather Service, in English.'))}</div>` : ''}
+    <div class="afd-body">${html}</div><button class="textbtn morebtn" data-afd aria-expanded="${open}">${esc(open ? $t('Show less') : $t('Read the full discussion'))}</button></section>`;
 }
 function sourcesCard(m) {
   const c = m.current, tz = m.place.tz, p = m.place;
-  const obsLine = c && c.staleAt ? `Last reading at ${esc(stationLabel(c.station))} was ${esc(fmtWhen(c.staleAt, tz))}, over two hours ago, so “now” shows the forecast for this hour.`
+  const obsLine = c && c.staleAt ? $t('Last reading at {station} was {when}, over two hours ago, so “now” shows the forecast for this hour.', { station: stationLabel(c.station), when: fmtWhen(c.staleAt, tz) })
     : c && c.src === 'obs'
-    ? `Measured at ${esc(stationLabel(c.station))} · ${esc(fmtClock(c.t, tz))}${c.via === 'iem' ? '. Latest report relayed by the Iowa Environmental Mesonet, which posts airport-station reports minutes after they go out (weather.gov can lag up to an hour).' : ''}`
-    : 'No recent station reading; showing the forecast for this hour.';
+    ? $t('Measured at {station} · {time}', { station: stationLabel(c.station), time: fmtClock(c.t, tz) }) + (c.via === 'iem' ? $t('. Latest report relayed by the Iowa Environmental Mesonet, which posts airport-station reports minutes after they go out (weather.gov can lag up to an hour).') : '')
+    : $t('No recent station reading; showing the forecast for this hour.');
   const nNws = m.daily.filter(d => d.src === 'NWS').length;
-  return `<section class="card span2 sources"><div class="card-h">${ui('info')} Where these numbers come from</div><dl>
-    <div><dt>Now</dt><dd>${obsLine}</dd></div>
-    <div><dt>Days 1–${nNws || 7}</dt><dd>Official forecast from NWS ${esc(p.officeName)} for grid square ${esc(p.grid || p.office)} ${p.x},${p.y} (about 2.5 km across)${m.issued ? ` · issued ${esc(fmtWhen(m.issued, tz))}` : ''}</dd></div>
-    <div><dt>Later days</dt><dd>${!m.nbmOk ? 'Unavailable this time.' : m.ext === 'GFS' ? 'NOAA Global Forecast System (GFS), served by Open-Meteo. The National Blend of Models feed Gridpoint uses in the lower 48 doesn’t cover this area.' : 'NOAA National Blend of Models (NBM), served by Open-Meteo. NBM is the statistical blend of dozens of models that NWS forecasters start from.'}</dd></div>
-    <div><dt>Radar</dt><dd>NWS ${esc(p.radar || '')}</dd></div></dl>
-    <div class="links"><a href="https://forecast.weather.gov/MapClick.php?lat=${p.lat}&lon=${p.lon}" target="_blank" rel="noopener">This forecast on weather.gov ↗</a>
-    <a href="https://forecast.weather.gov/product.php?site=${esc(p.office)}&issuedby=${esc(p.office)}&product=AFD&format=txt" target="_blank" rel="noopener">Forecaster's discussion ↗</a>
+  return `<section class="card span2 sources"><div class="card-h">${ui('info')} ${esc($t('Where these numbers come from'))}</div><dl>
+    <div><dt>${esc($t('Now'))}</dt><dd>${esc(obsLine)}</dd></div>
+    <div><dt>${esc($t('Days 1–{n}', { n: nNws || 7 }))}</dt><dd>${esc($t('Official forecast from NWS {office} for grid square {grid} {x},{y} (about 2.5 km across)', { office: p.officeName, grid: p.grid || p.office, x: p.x, y: p.y }))}${m.issued ? ' · ' + esc($t('issued {when}', { when: fmtWhen(m.issued, tz) })) : ''}</dd></div>
+    <div><dt>${esc($t('Later days'))}</dt><dd>${esc(!m.nbmOk ? $t('Unavailable this time.') : m.ext === 'GFS' ? $t('NOAA Global Forecast System (GFS), served by Open-Meteo. The National Blend of Models feed Gridpoint uses in the lower 48 doesn’t cover this area.') : $t('NOAA National Blend of Models (NBM), served by Open-Meteo. NBM is the statistical blend of dozens of models that NWS forecasters start from.'))}</dd></div>
+    <div><dt>${esc($t('Radar'))}</dt><dd>NWS ${esc(p.radar || '')}</dd></div></dl>
+    <div class="links"><a href="https://forecast.weather.gov/MapClick.php?lat=${p.lat}&lon=${p.lon}" target="_blank" rel="noopener">${esc($t('This forecast on weather.gov'))} ↗</a>
+    <a href="https://forecast.weather.gov/product.php?site=${esc(p.office)}&issuedby=${esc(p.office)}&product=AFD&format=txt" target="_blank" rel="noopener">${esc($t("Forecaster's discussion"))} ↗</a>
     <a href="https://mesonet.agron.iastate.edu/" target="_blank" rel="noopener">Iowa Environmental Mesonet ↗</a>
     <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com ↗</a></div></section>`;
 }
 
 /* ============================== day sheet ============================== */
-const METRICS = [['conditions', 'Conditions'], ['precip', 'Precipitation'], ['wind', 'Wind'], ['humidity', 'Humidity'], ['clouds', 'Clouds']];
+const METRICS = [['conditions', tk('Conditions')], ['precip', tk('Precipitation')], ['wind', tk('Wind')], ['humidity', tk('Humidity')], ['clouds', tk('Clouds')]];
 function dayData(m, date) {
   const tz = m.place.tz, t0 = dayStart(date, tz), t1 = dayStart(addDays(date, 1), tz), now = Date.now();
   const fut = m.hourly.filter(h => h.t >= t0 && h.t <= t1 && h.t + HOUR > now);
@@ -2051,7 +2330,8 @@ function dayData(m, date) {
   return { t0, t1, fut, past, lead, now };
 }
 const obsFeels = h => feelsLike(h.tempF, h.rh, h.windMph || 0);
-const dayWord = (m, date) => date === ymd(Date.now(), m.place.tz) ? 'Today' : weekdayLong(date);
+/* "Today", or the weekday in the language's own case (lowercase mid-sentence in Spanish, French...) */
+const dayWord = (m, date) => date === ymd(Date.now(), m.place.tz) ? $t('Today') : weekdayLong(date);
 /* condition at a given hour: the forecast hour, or for hours already gone, the station's report */
 function conditionAt(m, t) {
   const now = Date.now();
@@ -2082,78 +2362,82 @@ function renderDaySheet() {
   const { fut, past } = d;
   const panelScroll = sh.querySelector('.panel') ? sh.querySelector('.panel').scrollTop : 0;
   const strip = dates.map(x => `<button class="dchip${x === today ? ' today' : ''}" data-goto="${x}" aria-current="${x === state.day}" aria-label="${esc(longDate(x))}"><span class="w">${weekdayInitial(x)}</span><span class="n">${+x.slice(8)}</span></button>`).join('');
-  const tabs = METRICS.map(([k, l]) => `<button role="tab" data-metric="${k}" aria-selected="${state.metric === k}">${l}</button>`).join('');
+  const tabs = METRICS.map(([k, l]) => `<button role="tab" data-metric="${k}" aria-selected="${state.metric === k}">${esc($t(l))}</button>`).join('');
   const isToday = row.date === today, name = dayWord(m, row.date);
   let head = '', body = '';
   const srcs = [...new Set(fut.map(h => h.src))];
-  const srcText = (past.length ? 'Gray line: measured at ' + (m.current && m.current.station ? m.current.station.id : 'the nearest station') + '. ' : '') + (srcs.length ? 'Forecast: ' + srcs.map(s => s === 'NWS' ? 'NWS hourly forecast' : extName(m)).join(' + ') + '.' : '');
-  const chartBox = (id, label) => `<div class="chartbox" id="${id}" tabindex="0" aria-label="${esc(label)}. Hover, drag or use the arrow keys to read values."></div>`;
+  const srcText = (past.length ? (m.current && m.current.station ? $t('Gray line: measured at {station}.', { station: m.current.station.id }) : $t('Gray line: measured at the nearest station.')) + ' ' : '') + (srcs.length ? $t('Forecast: {list}.', { list: srcs.map(s => s === 'NWS' ? $t('NWS hourly forecast') : extName(m)).join(' + ') }) : '');
+  const chartBox = (id, label) => `<div class="chartbox" id="${id}" tabindex="0" aria-label="${esc($t(label))}. ${esc($t('Hover, drag or use the arrow keys to read values.'))}"></div>`;
   if (state.metric === 'conditions') {
     if (!state.feels) {
       /* say which hours the two numbers cover: NWS pairs a day's high with the low of the night after it */
-      const hiWord = isNum(row.hi) ? (isToday ? (row.hiObs ? 'High measured today' : 'High today') : 'High ' + weekdayLong(row.date)) : '';
-      const loWord = isNum(row.lo) ? (row.loPre ? 'Low early this morning' : 'Low ' + (isToday ? 'tonight' : weekdayLong(row.date) + ' night')) + (row.loEst ? ' (model blend)' : '') : '';
-      head = `<div class="dhead big" id="dhead"><div class="hl">${isNum(row.hi) ? fmtT(row.hi) : ''}<span class="l">${isNum(row.lo) ? fmtT(row.lo) : ''}</span></div>${wi(iconId(row.code, row.isDay !== false, row.pop))}<div class="lbl">${esc(row.text)}${row.src === 'NBM' ? ' · ' + esc(extName(m)) : ''}<br><span class="faint">${[hiWord, loWord].filter(Boolean).join(' · ')}</span></div></div>`;
+      const wd = weekdayLong(row.date);
+      const hiWord = isNum(row.hi) ? (isToday ? (row.hiObs ? $t('High measured today') : $t('High today')) : $t('High {day}', { day: wd })) : '';
+      const loWord = isNum(row.lo) ? (row.loPre ? $t('Low early this morning') : isToday ? $t('Low tonight') : $t('Low {day} night', { day: wd })) + (row.loEst ? ' ' + $t('(model blend)') : '') : '';
+      head = `<div class="dhead big" id="dhead"><div class="hl">${isNum(row.hi) ? fmtT(row.hi) : ''}<span class="l">${isNum(row.lo) ? fmtT(row.lo) : ''}</span></div>${wi(iconId(row.code, row.isDay !== false, row.pop))}<div class="lbl">${esc(condText(row.text, row.code, row.pop, row.isDay !== false))}${row.src === 'NBM' ? ' · ' + esc(extName(m)) : ''}<br><span class="faint">${esc([hiWord, loWord].filter(Boolean).join(' · '))}</span></div></div>`;
     } else {
       const fs = past.map(obsFeels).concat(fut.map(h => h.feelsF)).filter(isNum);
-      head = `<div class="dhead big" id="dhead"><div class="hl">${fs.length ? fmtT(Math.max(...fs)) : ''}<span class="l">${fs.length ? fmtT(Math.min(...fs)) : ''}</span></div>${wi(iconId(row.code, row.isDay !== false, row.pop))}<div class="lbl">Feels like<br><span class="faint">Warmest and coldest it feels across the day, wind and humidity included</span></div></div>`;
+      head = `<div class="dhead big" id="dhead"><div class="hl">${fs.length ? fmtT(Math.max(...fs)) : ''}<span class="l">${fs.length ? fmtT(Math.min(...fs)) : ''}</span></div>${wi(iconId(row.code, row.isDay !== false, row.pop))}<div class="lbl">${esc($t('Feels like'))}<br><span class="faint">${esc($t('Warmest and coldest it feels across the day, wind and humidity included'))}</span></div></div>`;
     }
-    body += `<div class="iconrow" id="iconrow" aria-hidden="true"></div>${chartBox('c1', 'Temperature by hour')}
-      <div class="toggle" role="group" aria-label="Temperature type"><button data-feels="0" aria-pressed="${!state.feels}">Actual</button><button data-feels="1" aria-pressed="${state.feels}">Feels Like</button></div>
-      <div class="dsec"><div id="c2head" class="dsec-head"><h3>Chance of precipitation</h3><div class="sub">${esc(dayChanceLine(row, name))}</div></div>${chartBox('c2', 'Chance of precipitation by hour')}
-        <div class="note">The chance for a whole day or night tends to be higher than the chance for any single hour.</div></div>
+    body += `<div class="iconrow" id="iconrow" aria-hidden="true"></div>${chartBox('c1', tk('Temperature by hour'))}
+      <div class="toggle" role="group" aria-label="${esc($t('Temperature type'))}"><button data-feels="0" aria-pressed="${!state.feels}">${esc($t('Actual'))}</button><button data-feels="1" aria-pressed="${state.feels}">${esc($t('Feels Like'))}</button></div>
+      <div class="dsec"><div id="c2head" class="dsec-head"><h3>${esc($t('Chance of precipitation'))}</h3><div class="sub">${esc(dayChanceLine(row, name))}</div></div>${chartBox('c2', tk('Chance of precipitation by hour'))}
+        <div class="note">${esc($t('The chance for a whole day or night tends to be higher than the chance for any single hour.'))}</div></div>
       ${precipTotalHTML(m, row, d)}
       ${daySummaryHTML(m, row, d)}
-      <div class="dsec"><h3>About Feels Like</h3><div class="note">Feels Like is how the air will feel on your skin. In the cold it uses the National Weather Service wind chill formula (50°F or colder with at least 3 mph of wind); in the heat it uses the NWS heat index (80°F or warmer). Otherwise it matches the actual temperature.</div></div>`;
+      <div class="dsec"><h3>${esc($t('About Feels Like'))}</h3><div class="note">${esc($t('Feels Like is how the air will feel on your skin. In the cold it uses the National Weather Service wind chill formula (50°F or colder with at least 3 mph of wind); in the heat it uses the NWS heat index (80°F or warmer). Otherwise it matches the actual temperature.'))}</div></div>`;
   } else if (state.metric === 'precip') {
     const tot = fut.reduce((s, h) => s + (isNum(h.qpf) ? h.qpf : 0), 0) || (row.src === 'NBM' && isNum(row.qpf) ? row.qpf : 0);
     const sn = fut.reduce((s, h) => s + (isNum(h.snow) ? h.snow : 0), 0);
-    head = `<div class="dhead" id="dhead"><div class="stat">${fmtPrecip(tot)}${sn >= 0.05 ? ` · ${fmtSnow(sn)} snow` : ''}</div><div class="lbl">Expected ${isToday ? 'for the rest of today' : 'for the day'} · highest hourly chance ${round10(Math.max(0, ...fut.map(h => h.pop)))}%</div></div>`;
-    body += `${chartBox('c1', 'Chance of precipitation by hour')}<div class="dsec"><div id="c2head" class="dsec-head"><h3>Amount per hour</h3><div class="sub">Liquid equivalent, from the forecast grid</div></div>${chartBox('c2', 'Precipitation amount by hour')}</div>`;
+    head = `<div class="dhead" id="dhead"><div class="stat">${fmtPrecip(tot)}${sn >= 0.05 ? ' · ' + esc($t('{amt} snow', { amt: fmtSnow(sn) })) : ''}</div><div class="lbl">${esc(isToday ? $t('Expected for the rest of today') : $t('Expected for the day'))} · ${esc($t('highest hourly chance {p}%', { p: round10(Math.max(0, ...fut.map(h => h.pop))) }))}</div></div>`;
+    body += `${chartBox('c1', tk('Chance of precipitation by hour'))}<div class="dsec"><div id="c2head" class="dsec-head"><h3>${esc($t('Amount per hour'))}</h3><div class="sub">${esc($t('Liquid equivalent, from the forecast grid'))}</div></div>${chartBox('c2', tk('Precipitation amount by hour'))}</div>`;
   } else if (state.metric === 'wind') {
     const mx = Math.max(0, ...fut.map(h => h.windMph || 0), ...past.map(h => h.windMph || 0));
     const gx = Math.max(0, ...fut.map(h => h.gustMph || 0), ...past.map(h => h.gustMph || 0));
-    head = `<div class="dhead" id="dhead"><div class="stat">${fmtWind(mx)}</div><div class="lbl">Strongest sustained wind${gx > mx ? ` · gusts to ${fmtWind(gx)}` : ''}</div></div>`;
-    body += `${chartBox('c1', 'Wind by hour')}<div class="arrows" id="arrows"></div><div class="dsrc" style="margin-top:6px">Solid line: sustained wind. Dashes and dots: gusts. Arrows point the way the wind blows; letters show where it comes from.</div>`;
+    head = `<div class="dhead" id="dhead"><div class="stat">${fmtWind(mx)}</div><div class="lbl">${esc($t('Strongest sustained wind'))}${gx > mx ? ' · ' + esc($t('gusts to {v}', { v: fmtWind(gx) })) : ''}</div></div>`;
+    body += `${chartBox('c1', tk('Wind by hour'))}<div class="arrows" id="arrows"></div><div class="dsrc" style="margin-top:6px">${esc($t('Solid line: sustained wind. Dashes and dots: gusts. Arrows point the way the wind blows; letters show where it comes from.'))}</div>`;
   } else if (state.metric === 'humidity') {
     const all = fut.concat(past).map(h => h.rh).filter(isNum);
     const dews = fut.concat(past).map(h => h.dewF).filter(isNum);
-    head = `<div class="dhead" id="dhead"><div class="stat">${all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) + '%' : '--'}</div><div class="lbl">Average relative humidity${dews.length ? ` · dew point ${fmtT(Math.min(...dews))} to ${fmtT(Math.max(...dews))}` : ''}</div></div>`;
-    body += chartBox('c1', 'Relative humidity by hour');
+    head = `<div class="dhead" id="dhead"><div class="stat">${all.length ? Math.round(all.reduce((a, b) => a + b, 0) / all.length) + '%' : '--'}</div><div class="lbl">${esc($t('Average relative humidity'))}${dews.length ? ' · ' + esc($t('dew point {a} to {b}', { a: fmtT(Math.min(...dews)), b: fmtT(Math.max(...dews)) })) : ''}</div></div>`;
+    body += chartBox('c1', tk('Relative humidity by hour'));
   } else {
     const sk = fut.map(h => h.sky).filter(isNum);
-    head = `<div class="dhead" id="dhead"><div class="stat">${sk.length ? Math.round(sk.reduce((a, b) => a + b, 0) / sk.length) + '%' : '--'}</div><div class="lbl">Average sky cover</div></div>`;
-    body += chartBox('c1', 'Sky cover by hour');
+    head = `<div class="dhead" id="dhead"><div class="stat">${sk.length ? Math.round(sk.reduce((a, b) => a + b, 0) / sk.length) + '%' : '--'}</div><div class="lbl">${esc($t('Average sky cover'))}</div></div>`;
+    body += chartBox('c1', tk('Sky cover by hour'));
   }
   let text = '';
-  if (row.dayText) text += `<p><b>${esc(row.dayName)}</b>${esc(row.dayText)}</p>`;
-  if (row.nightText) text += `<p><b>${esc(row.nightName)}</b>${esc(row.nightText)}</p>`;
-  if (row.src === 'NBM') text += `<p><b>Extended outlook</b>This day is past the official 7-day forecast. Numbers come from the ${esc(extName(m))} and haven't been adjusted by a forecaster.</p>`;
+  if (PACK && (row.dayText || row.nightText)) text += `<p class="en-note">${esc($t('Forecast text from the National Weather Service, in English.'))}</p>`;
+  if (row.dayText) text += `<p><b>${esc(periodName(row.dayName))}</b>${enText(esc(row.dayText))}</p>`;
+  if (row.nightText) text += `<p><b>${esc(periodName(row.nightName))}</b>${enText(esc(row.nightText))}</p>`;
+  if (row.src === 'NBM') text += `<p><b>${esc($t('Extended outlook'))}</b>${esc($t("This day is past the official 7-day forecast. Numbers come from the {name} and haven't been adjusted by a forecaster.", { name: extName(m) }))}</p>`;
   sh.innerHTML = `<div class="panel" role="dialog" aria-modal="true" aria-label="${esc(longDate(state.day))}">
-    <div class="panel-top"><div class="tabs" role="tablist">${tabs}</div><button class="xbtn" data-close aria-label="Close">${ui('close')}</button></div>
+    <div class="panel-top"><div class="tabs" role="tablist">${tabs}</div><button class="xbtn" data-close aria-label="${esc($t('Close'))}">${ui('close')}</button></div>
     <div class="dstrip" style="--n:${dates.length}">${strip}</div>
-    <div class="dnav"><button data-step="-1" ${idx <= 0 ? 'disabled' : ''} aria-label="Previous day">${ui('left')}</button><div class="dtitle">${esc(longDate(state.day))}</div><button data-step="1" ${idx >= dates.length - 1 ? 'disabled' : ''} aria-label="Next day">${ui('right')}</button></div>
+    <div class="dnav"><button data-step="-1" ${idx <= 0 ? 'disabled' : ''} aria-label="${esc($t('Previous day'))}">${ui('left')}</button><div class="dtitle">${esc(longDate(state.day))}</div><button data-step="1" ${idx >= dates.length - 1 ? 'disabled' : ''} aria-label="${esc($t('Next day'))}">${ui('right')}</button></div>
     ${head}${body}<div class="dtext">${text}</div><div class="dsrc">${esc(srcText)}</div></div>`;
   sh.hidden = false;
   drawDayCharts(m, d);
   const p = sh.querySelector('.panel'); if (p) p.scrollTop = panelScroll;
 }
 function dayChanceLine(row, name) {
-  if (row.src === 'NBM') return `Highest hourly chance: ${round10(row.pop)}%`;
-  const who = row.dayName ? name + '’s' : (name === 'Today' ? 'Tonight’s' : name + ' night’s');
-  return `${who} chance: ${round10(row.pop)}%`;
+  const p = round10(row.pop);
+  if (row.src === 'NBM') return $t('Highest hourly chance: {p}%', { p });
+  if (row.dayName) return name === $t('Today') ? $t('Today’s chance: {p}%', { p }) : cap($t('{day}’s chance: {p}%', { day: name, p }));
+  return name === $t('Today') ? $t('Tonight’s chance: {p}%', { p }) : cap($t('{day} night’s chance: {p}%', { day: name, p }));
 }
 function precipTotalHTML(m, row, d) {
   const isToday = row.date === ymd(d.now, m.place.tz);
   const hrs = d.fut.filter(h => h.t < d.t1);
   const liq = hrs.reduce((s, h) => s + (isNum(h.qpf) ? h.qpf : 0), 0);
   const snow = hrs.reduce((s, h) => s + (isNum(h.snow) ? h.snow : 0), 0);
-  const what = liq < 0.005 && snow < 0.05 ? 'None expected' : `${fmtPrecip(liq)} of rain or melted snow${snow >= 0.05 ? ` · ${fmtSnow(snow)} of snow` : ''}`;
-  return `<div class="dsec"><h3>Precipitation total</h3><div class="sub">${isToday ? 'Rest of today' : 'For the day'}: ${esc(what)}</div></div>`;
+  const what = liq < 0.005 && snow < 0.05 ? $t('None expected') : $t('{amt} of rain or melted snow', { amt: fmtPrecip(liq) }) + (snow >= 0.05 ? ' · ' + $t('{amt} of snow', { amt: fmtSnow(snow) }) : '');
+  return `<div class="dsec"><h3>${esc($t('Precipitation total'))}</h3><div class="sub">${esc(isToday ? $t('Rest of today') : $t('For the day'))}: ${esc(what)}</div></div>`;
 }
-/* A plain-language rundown built from the same numbers the charts show. */
+/* A plain-language rundown built from the same numbers the charts show. Each sentence is a whole
+   phrase in every language, so word order and grammar can follow the language. */
 function daySummaryHTML(m, row, d) {
-  const tz = m.place.tz, now = d.now, isToday = row.date === ymd(now, tz), name = dayWord(m, row.date);
+  const tz = m.place.tz, now = d.now, isToday = row.date === ymd(now, tz), wd = weekdayLong(row.date);
   const pts = d.past.map(h => ({ t: h.t, v: h.tempF, f: obsFeels(h), obs: true }))
     .concat(d.fut.filter(h => h.t >= now && h.t < d.t1).map(h => ({ t: h.t, v: h.tempF, f: h.feelsF })))
     .filter(p => isNum(p.v));
@@ -2167,31 +2451,43 @@ function daySummaryHTML(m, row, d) {
   const near = pool.filter(p => p.v >= top - (pool.some(x => x.obs) ? 0.6 : 0));
   const first = near[0], last = near[near.length - 1];
   const highPast = row.hiObs || (isToday && last.obs);
-  const when = first === last || last.t - first.t < 90 * 60e3 ? `${first.obs ? 'at' : 'around'} ${clock(first)}` : `between ${clock(first)} and ${clock(last)}`;
-  out.push(`${name}’s high ${highPast ? 'was' : 'will be'} ${fmtT(row.hi)} ${when}.`);
+  const span = !(first === last || last.t - first.t < 90 * 60e3);
+  const how = span ? 'between' : first.obs ? 'at' : 'around';
+  const v = { temp: fmtT(row.hi), time: clock(first), a: clock(first), b: clock(last), day: wd };
+  const HIGH = {
+    'today-past-at': tk('Today’s high was {temp} at {time}.'), 'today-past-around': tk('Today’s high was {temp} around {time}.'), 'today-past-between': tk('Today’s high was {temp} between {a} and {b}.'),
+    'today-will-at': tk('Today’s high will be {temp} at {time}.'), 'today-will-around': tk('Today’s high will be {temp} around {time}.'), 'today-will-between': tk('Today’s high will be {temp} between {a} and {b}.'),
+    'day-will-at': tk('{day}’s high will be {temp} at {time}.'), 'day-will-around': tk('{day}’s high will be {temp} around {time}.'), 'day-will-between': tk('{day}’s high will be {temp} between {a} and {b}.'),
+  };
+  out.push(cap($t(HIGH[`${isToday ? 'today' : 'day'}-${isToday && highPast ? 'past' : 'will'}-${how}`], v)));
   /* the low that goes with it: the night after, like the NWS forecast, timed from the hourly values */
   if (isNum(row.lo)) {
-    if (row.loPre) out.push(`The low was ${fmtT(row.lo)} early this morning.`);
+    if (row.loPre) out.push($t('The low was {temp} early this morning.', { temp: fmtT(row.lo) }));
     else {
       const n0 = zoned(...splitDate(row.date), 19, 0, tz), n1 = zoned(...splitDate(addDays(row.date, 1)), 8, 0, tz);
       const night = m.hourly.filter(h => h.t >= n0 && h.t <= n1 && isNum(h.tempF));
       const low = night.length ? night.reduce((b, h) => h.tempF < b.tempF ? h : b) : null;
-      const nm = isToday ? 'Tonight' : name + ' night';
-      const at = low ? ` around ${fmtHourLbl(low.t, tz).replace(/(AM|PM)$/, ' $1')}${ymd(low.t, tz) !== row.date ? (isToday ? '' : ' ' + weekdayLong(ymd(low.t, tz))) : ''}` : '';
-      out.push(`${nm}’s low will be ${fmtT(row.lo)}${at}.`);
+      const lv = { temp: fmtT(row.lo), day: wd };
+      if (!low) out.push(cap($t(isToday ? tk('Tonight’s low will be {temp}.') : tk('{day} night’s low will be {temp}.'), lv)));
+      else {
+        lv.time = fmtHourLbl(low.t, tz).replace(/(AM|PM)$/, ' $1');
+        const nextDay = ymd(low.t, tz) !== row.date && !isToday;
+        if (nextDay) lv.day2 = weekdayLong(ymd(low.t, tz));
+        out.push(cap($t(isToday ? tk('Tonight’s low will be {temp} around {time}.') : nextDay ? tk('{day} night’s low will be {temp} around {time} {day2}.') : tk('{day} night’s low will be {temp} around {time}.'), lv)));
+      }
     }
   }
   const fs = pts.map(p => p.f).filter(isNum);
   if (fs.length) {
     const lo = Math.min(...fs), hi = Math.max(...fs);
-    out.push(`With wind and humidity factored in, it ${isToday ? 'feels' : 'will feel'} like ${fmtT(lo)} to ${fmtT(hi)}.`);
+    out.push($t(isToday ? tk('With wind and humidity factored in, it feels like {a} to {b}.') : tk('With wind and humidity factored in, it will feel like {a} to {b}.'), { a: fmtT(lo), b: fmtT(hi) }));
     const n = pts.filter(p => isNum(p.f)).length;
     const colder = pts.filter(p => isNum(p.f) && p.f <= p.v - 3).length / n, warmer = pts.filter(p => isNum(p.f) && p.f >= p.v + 3).length / n;
-    if (colder >= 0.25) out.push('Wind makes it feel colder than the actual temperature for much of the day.');
-    else if (warmer >= 0.25) out.push('Humidity makes it feel warmer than the actual temperature for much of the day.');
-    else out.push('It feels close to the actual temperature most of the day.');
+    if (colder >= 0.25) out.push($t('Wind makes it feel colder than the actual temperature for much of the day.'));
+    else if (warmer >= 0.25) out.push($t('Humidity makes it feel warmer than the actual temperature for much of the day.'));
+    else out.push($t('It feels close to the actual temperature most of the day.'));
   }
-  return `<div class="dsec"><h3>Daily summary</h3><div class="note body">${esc(out.join(' '))}</div></div>`;
+  return `<div class="dsec"><h3>${esc($t('Daily summary'))}</h3><div class="note body">${esc(out.join(/^(zh|ja)/.test(LANG()) ? '' : ' '))}</div></div>`;
 }
 
 function drawDayCharts(m, d) {
@@ -2203,14 +2499,14 @@ function drawDayCharts(m, d) {
   const nowIn = now > t0 && now < t1 ? now : null;
   const P = (arr, f) => arr.map(h => ({ t: h.t, v: f(h) })).filter(p => isNum(p.v));
   const L = f => (lead && P([lead], f)[0]) || null;
-  const tag = t => t <= now ? 'Measured' : 'Forecast';
+  const tag = t => t <= now ? $t('Measured') : $t('Forecast');
   const pctFmt = v => v + '%';
   if (state.metric === 'conditions') {
     const actual = h => tDisp(h.tempF), feels = h => tDisp(isNum(h.feelsF) ? h.feelsF : h.tempF);
     const pastMain = P(past, state.feels ? h => tDisp(obsFeels(h)) : actual);
     const futMain = P(fut, state.feels ? feels : actual);
     const all = pastMain.concat(futMain);
-    if (!all.length) { box1.innerHTML = '<div class="sub">No hourly data for this day yet.</div>'; }
+    if (!all.length) { box1.innerHTML = `<div class="sub">${esc($t('No hourly data for this day yet.'))}</div>`; }
     else {
       /* in Feels Like mode the actual temperature rides along as a gray line, like Apple Weather */
       const actPts = state.feels ? P(past, actual).concat(P(fut, actual)).sort((a, b) => a.t - b.t) : [];
@@ -2224,7 +2520,7 @@ function drawDayCharts(m, d) {
         scrub: {
           head: 'dhead', mode: 'smooth',
           fmt: p => readout('big', fmtClock(p.t, tz), tag(p.t), iconAt(m, p.t), Math.round(p.v) + '°',
-            state.feels ? (isNum(interp(actPts, p.t)) ? `Actual: ${Math.round(interp(actPts, p.t))}°` : '') : ''),
+            state.feels ? (isNum(interp(actPts, p.t)) ? $t('Actual: {t}', { t: Math.round(interp(actPts, p.t)) + '°' }) : '') : ''),
         },
       });
       fillIconRow(m, d, w);
@@ -2233,7 +2529,7 @@ function drawDayCharts(m, d) {
       const pp = P(fut, h => h.pop);
       if (pp.length) paint(box2, {
         w, h: 150, t0, t1, tz, yMin: 0, yMax: 100, yStep: 20, yFmt: pctFmt, now: nowIn, past: [], fut: pp, color: '#5AC8FA', area: true,
-        scrub: { head: 'c2head', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', 'Chance of precipitation') },
+        scrub: { head: 'c2head', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', $t('Chance of precipitation')) },
       });
       else box2.innerHTML = '';
     }
@@ -2241,17 +2537,17 @@ function drawDayCharts(m, d) {
     const pp = P(fut, h => h.pop);
     if (pp.length) paint(box1, {
       w, h: 170, t0, t1, tz, yMin: 0, yMax: 100, yStep: 20, yFmt: pctFmt, now: nowIn, past: [], fut: pp, color: '#5AC8FA', area: true,
-      scrub: { head: 'dhead', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', 'Chance of precipitation') },
+      scrub: { head: 'dhead', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', $t('Chance of precipitation')) },
     });
-    else box1.innerHTML = '<div class="sub">No hourly data for this day yet.</div>';
+    else box1.innerHTML = `<div class="sub">${esc($t('No hourly data for this day yet.'))}</div>`;
     const qp = P(fut, h => precipDisp(h.qpf));
     const mx = Math.max(0, ...qp.map(p => p.v));
     const step = metric() ? (mx > 4 ? 2 : mx > 2 ? 1 : 0.5) : (mx > 0.2 ? 0.1 : mx > 0.1 ? 0.05 : 0.02);
-    const amt = v => metric() ? v.toFixed(1) + ' mm' : v.toFixed(2) + '″';
+    const amt = v => metric() ? fmtNum(v, 1) + ' ' + $t('mm') : fmtNum(v, 2) + '″';
     if (box2) {
       if (qp.length) paint(box2, {
-        w, h: 150, t0, t1, tz, yMin: 0, yMax: Math.max(step * 2, Math.ceil(mx / step) * step), yStep: step, yFmt: v => metric() ? v.toFixed(1) : v.toFixed(2), now: nowIn, past: [], fut: qp, color: '#5AC8FA', bars: true,
-        scrub: { head: 'c2head', mode: 'point', fmt: p => readout('compact', `${fmtClock(p.t, tz)} – ${fmtClock(p.t + HOUR, tz)}`, '', '', amt(p.v), 'Liquid equivalent') },
+        w, h: 150, t0, t1, tz, yMin: 0, yMax: Math.max(step * 2, Math.ceil(mx / step) * step), yStep: step, yFmt: v => metric() ? fmtNum(v, 1) : fmtNum(v, 2), now: nowIn, past: [], fut: qp, color: '#5AC8FA', bars: true,
+        scrub: { head: 'c2head', mode: 'point', fmt: p => readout('compact', `${fmtClock(p.t, tz)} – ${fmtClock(p.t + HOUR, tz)}`, '', '', amt(p.v), $t('Liquid equivalent')) },
       });
       else box2.innerHTML = '';
     }
@@ -2267,7 +2563,7 @@ function drawDayCharts(m, d) {
       scrub: {
         head: 'dhead', mode: 'point', fmt: p => {
           const h = nearestOf(pool, p.t);
-          const bits = [h && isNum(h.gustMph) ? `Gusts ${fmtWind(h.gustMph)}` : '', h && isNum(h.dir) && h.windMph >= 1 ? `from ${degToDir(h.dir)}` : (h && h.windMph < 1 ? 'Calm' : '')].filter(Boolean);
+          const bits = [h && isNum(h.gustMph) ? $t('Gusts {v}', { v: fmtWind(h.gustMph) }) : '', h && isNum(h.dir) && h.windMph >= 1 ? $t('from {dir}', { dir: dirLabel(h.dir) }) : (h && h.windMph < 1 ? $t('Calm') : '')].filter(Boolean);
           return readout('compact', fmtClock(p.t, tz), tag(p.t), '', fmtWind(h ? h.windMph : null), bits.join(' · '));
         },
       },
@@ -2282,7 +2578,7 @@ function drawDayCharts(m, d) {
         const near = nearestOf(dirs, t);
         if (!near || Math.abs(near.t - t) > 1.6 * HOUR) continue;
         const left = (6 + (t - t0) / (t1 - t0) * (w - 46)) / w * 100;
-        html += `<div style="left:${left.toFixed(2)}%" title="From ${degToDir(near.dir)}"><svg viewBox="0 0 24 24"><g transform="rotate(${near.dir} 12 12)"><path d="M12 3v18M6 15l6 6 6-6" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="square" stroke-linejoin="miter"/></g></svg>${esc(degToDir(near.dir))}</div>`;
+        html += `<div style="left:${left.toFixed(2)}%" title="${esc(cap($t('from {dir}', { dir: dirLabel(near.dir) })))}"><svg viewBox="0 0 24 24"><g transform="rotate(${near.dir} 12 12)"><path d="M12 3v18M6 15l6 6 6-6" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="square" stroke-linejoin="miter"/></g></svg>${esc(dirLabel(near.dir))}</div>`;
       }
       ar.innerHTML = html;
     }
@@ -2290,12 +2586,12 @@ function drawDayCharts(m, d) {
     const pool = past.concat(fut).filter(h => isNum(h.rh)).sort((a, b) => a.t - b.t);
     paint(box1, {
       w, h: 200, t0, t1, tz, yMin: 0, yMax: 100, yStep: 25, yFmt: pctFmt, now: nowIn, past: P(past, h => h.rh), fut: P(fut, h => h.rh), lead: L(h => h.rh), color: '#7FB8FF', area: true,
-      scrub: { head: 'dhead', mode: 'point', fmt: p => { const h = nearestOf(pool, p.t); return readout('compact', fmtClock(p.t, tz), tag(p.t), '', Math.round(p.v) + '%', h && isNum(h.dewF) ? `Dew point ${fmtT(h.dewF)}` : 'Relative humidity'); } },
+      scrub: { head: 'dhead', mode: 'point', fmt: p => { const h = nearestOf(pool, p.t); return readout('compact', fmtClock(p.t, tz), tag(p.t), '', Math.round(p.v) + '%', h && isNum(h.dewF) ? $t('Dew point {t}', { t: fmtT(h.dewF) }) : $t('Relative humidity')); } },
     });
   } else {
     paint(box1, {
       w, h: 200, t0, t1, tz, yMin: 0, yMax: 100, yStep: 25, yFmt: pctFmt, now: nowIn, past: [], fut: P(fut, h => h.sky), color: '#C9D4E2', area: true,
-      scrub: { head: 'dhead', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', 'Sky cover') },
+      scrub: { head: 'dhead', mode: 'point', fmt: p => readout('compact', fmtClock(p.t, tz), '', '', Math.round(p.v) + '%', $t('Sky cover')) },
     });
   }
 }
@@ -2450,10 +2746,11 @@ function chart(o) {
     if (o.hilo && all.length > 2) {
       const mx = all.reduce((b, p) => p.v > b.v ? p : b), mn = all.reduce((b, p) => p.v < b.v ? p : b);
       for (const [p, l] of [[mx, 'H'], [mn, 'L']]) {
+        const lbl = l === 'H' ? $t('H') : $t('L');
         let x = X(p.t), y = Y(p.v), anchor = 'middle';
         if (x > w - padR - 14) { anchor = 'end'; } else if (x < padL + 14) { anchor = 'start'; }
         const ly = l === 'H' || y + 18 > base ? y - 10 : y + 18;
-        s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#fff" stroke="rgba(0,0,0,.35)"/><text class="mk" x="${(anchor === 'end' ? x - 3 : anchor === 'start' ? x + 3 : x).toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}">${l}</text>`;
+        s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#fff" stroke="rgba(0,0,0,.35)"/><text class="mk" x="${(anchor === 'end' ? x - 3 : anchor === 'start' ? x + 3 : x).toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}">${esc(lbl)}</text>`;
       }
     }
     if (now && all.length) {
@@ -2678,6 +2975,7 @@ document.addEventListener('keydown', e => {
   if (searchKeys(e)) return;
   if (e.key === 'Escape') {
     if (scrub) { endScrub(); return; }
+    if (!$('langSheet').hidden) { closeLang(); return; }
     if (!$('bugSheet').hidden) { closeBug(); return; }
     if (!$('installSheet').hidden) { closeGuide(); return; }
     if (!$('daySheet').hidden) { state.day = null; $('daySheet').hidden = true; return; }
@@ -2706,8 +3004,12 @@ document.addEventListener('click', e => {
   if (e.target === $('placesSheet')) { $('placesSheet').hidden = true; return; }
   if (e.target === $('installSheet')) { closeGuide(); return; }
   if (e.target === $('bugSheet')) { closeBug(); return; }
+  if (e.target === $('langSheet')) { closeLang(); return; }
   if (!el) return;
   const d = el.dataset;
+  if ('lang' in d) { openLang(); return; }
+  if (d.setLang) { setLanguage(d.setLang); return; }
+  if ('closeLang' in d) { closeLang(); return; }
   if ('bug' in d) { openBug(); return; }
   if ('closeBug' in d) { closeBug(); return; }
   if ('bugSend' in d) { sendBug(); return; }
@@ -2740,7 +3042,7 @@ document.addEventListener('click', e => {
 });
 function locate(btn) {
   const old = btn.innerHTML;
-  btn.textContent = 'Finding you…';
+  btn.textContent = $t('Finding you…');
   navigator.geolocation.getCurrentPosition(pos => {
     const lat = +pos.coords.latitude.toFixed(4), lon = +pos.coords.longitude.toFixed(4);
     const existing = state.places.find(p => p.id === 'here');
@@ -2753,7 +3055,7 @@ function locate(btn) {
     btn.innerHTML = old;
     const n = document.createElement('div');
     n.className = 'sb-foot';
-    n.textContent = err && err.code === 1 ? 'Location permission was denied. Search for your city instead.' : 'Your location isn’t available right now. Search for your city instead.';
+    n.textContent = err && err.code === 1 ? $t('Location permission was denied. Search for your city instead.') : $t('Your location isn’t available right now. Search for your city instead.');
     btn.after(n);
   }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 10 * 60e3 });
 }
@@ -2767,12 +3069,12 @@ daySheetEl.addEventListener('pointercancel', () => endScrub());
 daySheetEl.addEventListener('focusout', e => { if (e.target && e.target.classList && e.target.classList.contains('chartbox')) endScrub(); });
 /* while a sheet is open, the page behind it stays put */
 const lockPage = () => {
-  const open = ['daySheet', 'placesSheet', 'installSheet', 'bugSheet'].some(id => !$(id).hidden);
+  const open = ['daySheet', 'placesSheet', 'installSheet', 'bugSheet', 'langSheet'].some(id => !$(id).hidden);
   document.documentElement.classList.toggle('locked', open);
   if (!open) endScrub();
 };
 const lockObs = new MutationObserver(lockPage);
-for (const id of ['daySheet', 'placesSheet', 'installSheet', 'bugSheet']) lockObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
+for (const id of ['daySheet', 'placesSheet', 'installSheet', 'bugSheet', 'langSheet']) lockObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
 let resizeT = 0;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (!$('daySheet').hidden) renderDaySheet(); }, 150); });
 function maybeRefresh() {
@@ -2785,9 +3087,12 @@ window.addEventListener('online', () => { for (const k of Object.keys(state.erro
 window.addEventListener('offline', () => render());
 setInterval(() => { maybeRefresh(); const m = state.models[state.selected]; if (m && !document.hidden) { renderBar(); renderSidebar(); } }, 60e3);
 
+/* the language's words are on the device after the first time, so the first paint is already in it */
+const langReady = applyLang();
 render();
 loadAll();
 routeGuide();
+langReady.then(changed => { if (changed) rerenderAll(); });
 
 /* When served from a web address, save the app on the device (service worker) so it opens
    with no connection, and offer the manifest so it can be added to a Home Screen or Dock.

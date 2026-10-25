@@ -28,8 +28,10 @@ self.addEventListener('activate', event => {
 });
 
 /* Same-origin files: answer from the saved copy right away, then refresh that copy in the
-   background, so an updated app shows up the next time it's opened. Other pages on the site
-   (README, check.py) aren't part of the app and load normally. */
+   background, so an updated app shows up the next time it's opened. Language files are the
+   exception: the network first (an updated app asks for them once, and needs the new words),
+   the saved copy when there's no connection. Other pages on the site (README, check.py)
+   aren't part of the app and load normally. */
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -38,6 +40,7 @@ self.addEventListener('fetch', event => {
   const isPage = APP_PATHS.has(url.pathname);
   if (req.mode === 'navigate' && !isPage) return;
   const key = isPage ? PAGE : url.origin + url.pathname;
+  const netFirst = url.pathname.startsWith(BASE + 'i18n/');
   const cacheP = caches.open(CACHE);
   const fresh = fetch(isPage ? PAGE : req, { cache: 'no-store' }).then(res => {
     if (res && res.ok && !res.redirected) {
@@ -49,9 +52,12 @@ self.addEventListener('fetch', event => {
   event.waitUntil(fresh.then(() => {}, () => {}));
   event.respondWith((async () => {
     const saved = await (await cacheP).match(key);
-    if (saved) return saved;
-    try { return await fresh; }
-    catch (e) {
+    if (saved && !netFirst) return saved;
+    try {
+      const res = await fresh;
+      return !res.ok && saved ? saved : res;
+    } catch (e) {
+      if (saved) return saved;
       return new Response('Gridpoint needs a connection the first time it opens on a device. Connect once, and after that it opens offline too.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } });
     }
   })());
