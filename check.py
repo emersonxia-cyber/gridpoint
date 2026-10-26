@@ -265,6 +265,21 @@ def ext_model(lat, lon, tz):
     return j
 
 
+async def ext_versions(lat, lon, tz, first, tries=4):
+    """Open-Meteo answers from several servers too, and now and then they're out of sync for minutes, handing out
+    different versions of the same model. Fetch it a few more times and return the distinct versions seen
+    (the first one included), as nws_versions does."""
+    seen = {json.dumps(first['hourly']): first}
+    for _ in range(tries):
+        await asyncio.sleep(1.5)
+        try:
+            j = await asyncio.to_thread(ext_model, lat, lon, tz)
+        except Exception:
+            break   # most likely rate-limited (get_json has already waited and retried)
+        seen.setdefault(json.dumps(j['hourly']), j)
+    return list(seen.values())
+
+
 def ext_days(j, zone):
     """NWS-style days from hourly values: high 7 AM-7 PM, low over the following night 7 PM-8 AM,
     chance = highest hourly chance; only whole days (20+ hours, 10+ daytime hours)."""
@@ -590,7 +605,7 @@ async def check_place(browser, base, place, sem, results):
         if app['extTag'] and app['extTag'] != ext['_model']:
             res['fail'].append(f"extended outlook labeled {app['extTag']} but the source is {ext['_model']}")
 
-        def daily_cmp(fj):
+        def daily_cmp(fj, xr):
             exp_rows = nws_rows(fj['properties']['periods'], zone)
             bad = []
             n_nws = n_ext = 0
@@ -607,7 +622,7 @@ async def check_place(browser, base, place, sem, results):
                     if e['lo'] is not None and num(r['lo']) != e['lo']:
                         bad.append(f"{r['label']} low app {r['lo']} vs NWS {e['lo']}°")
                     if e['lo'] is None and r['lo']:
-                        x = ext_rows.get(d)
+                        x = xr.get(d)
                         if not r['est']:
                             bad.append(f"{r['label']} low {r['lo']} not marked as a model estimate")
                         elif x and x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
@@ -616,11 +631,11 @@ async def check_place(browser, base, place, sem, results):
                     shown = num(r['p']) if r['p'] else 0
                     if (pop >= 20 and shown != pop) or (pop < 20 and shown):
                         bad.append(f"{r['label']} chance app {r['p']} vs NWS {pop}%")
-                elif not ext_rows:
+                elif not xr:
                     n_ext += 1
-                elif d in ext_rows:
+                elif d in xr:
                     n_ext += 1
-                    x = ext_rows[d]
+                    x = xr[d]
                     if num(r['hi']) != jsround(x['hi']):
                         bad.append(f"{r['label']} {ext['_model']} high app {r['hi']} vs {jsround(x['hi'])}°")
                     if x['lo'] is not None and num(r['lo']) != jsround(x['lo']):
@@ -629,16 +644,22 @@ async def check_place(browser, base, place, sem, results):
                     bad.append(f"{r['label']} ({d}) isn't in either source")
             return bad, n_nws, n_ext
 
-        bad, n_nws, n_ext = daily_cmp(fc)
+        bad, n_nws, n_ext = daily_cmp(fc, ext_rows)
         if bad:
             versions = await nws_versions(pp['forecast'], fc)
             newest = max(upd(v) for v in versions)
-            tried = sorted(((daily_cmp(v), v) for v in versions), key=lambda t: len(t[0][0]))
-            (bad2, n2, e2), match = tried[0]
+            ext_vs = [ext_rows]
+            # Open-Meteo's servers can disagree too: if the model's days are all that's off (an NWS version matches without them), ask it again
+            if ext_rows and all(daily_cmp(v, ext_rows)[0] for v in versions) and any(not daily_cmp(v, {})[0] for v in versions):
+                ext_vs = [ext_days(j, zone) for j in await ext_versions(lat, lon, pp['timeZone'], ext)]
+            tried = sorted(((daily_cmp(v, x), v, x) for v in versions for x in ext_vs), key=lambda t: len(t[0][0]))
+            (bad2, n2, e2), match, xmatch = tried[0]
             if not bad2:
                 bad, n_nws, n_ext = bad2, n2, e2
                 if upd(match) < newest:
                     res['warn'].append(f"daily: app shows the NWS update from {hhmm(upd(match))}; some weather.gov servers already have {hhmm(newest)} (they disagree for a while after each update)")
+                if xmatch is not ext_vs[0]:
+                    res['warn'].append(f"daily: Open-Meteo's servers disagree on the {ext['_model']} model ({len(ext_vs)} versions); the app matches one, this check first got another")
         if bad:
             res['fail'].append('daily: ' + '; '.join(bad[:5]))
         else:
