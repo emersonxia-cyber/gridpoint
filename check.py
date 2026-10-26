@@ -169,6 +169,39 @@ def expected_now(stations):
     return nws or iem
 
 
+def miles(lat1, lon1, lat2, lon2):
+    r = math.radians
+    h = math.sin(r(lat2 - lat1) / 2) ** 2 + math.cos(r(lat1)) * math.cos(r(lat2)) * math.sin(r(lon2 - lon1) / 2) ** 2
+    return 2 * 3958.8 * math.asin(math.sqrt(h))
+
+
+def expected_normals(lat, lon, grid_url, day):
+    """The app's rule for the Averages tile: NOAA 1991-2020 daily normals (ACIS) from the nearest station within
+    40 miles whose elevation is within 500 ft of the NWS grid square's (within 15 miles if the grid has no elevation)."""
+    try:
+        elev = get_json(grid_url, tries=2)['properties']['elevation']['value'] * 3.28084
+    except Exception:
+        elev = None
+    dlat, dlon = 0.6, 0.6 / max(0.2, math.cos(math.radians(lat)))
+    params = {'bbox': ','.join(f'{x:.3f}' for x in (lon - dlon, lat - dlat, lon + dlon, lat + dlat)), 'sdate': day, 'edate': day,
+              'elems': [{'name': 'maxt', 'normal': '91'}, {'name': 'mint', 'normal': '91'}], 'meta': ['name', 'll', 'elev']}
+    j = get_json('https://data.rcc-acis.org/MultiStnData?params=' + urllib.parse.quote(json.dumps(params)), headers={'User-Agent': UA['User-Agent']}, tries=3)
+    cands = []
+    for r in j.get('data', []):
+        m, d = r.get('meta', {}), r.get('data') or []
+        row = d if d and isinstance(d[0], str) else (d[0] if d else [])   # one day comes back flat, several nested
+        if not m.get('ll') or len(row) < 2 or 'M' in row[:2]:
+            continue
+        cands.append((miles(lat, lon, m['ll'][1], m['ll'][0]), m.get('elev'), m['name'], float(row[0]), float(row[1])))
+    for dist, el, name, hi, lo in sorted(cands):
+        if dist > 40:
+            break
+        if (el is None or abs(el - elev) > 500) if elev is not None else dist > 15:
+            continue
+        return {'name': name, 'dist': dist, 'hi': hi, 'lo': lo}
+    return None
+
+
 def feels_like(T, rh, v):
     if T is None:
         return None
@@ -465,6 +498,42 @@ async def check_place(browser, base, place, sem, results):
             else:
                 res['info'].append('tiles (feels like, humidity, dew point, wind, gusts, direction, visibility, pressure) match the reading ✓')
 
+        # ---- averages tile vs NOAA 1991-2020 normals, re-derived from ACIS
+        try:
+            exp_nm = await asyncio.to_thread(expected_normals, lat, lon, pp['forecastGridData'], today.isoformat())
+        except Exception as e:
+            exp_nm = 'skip'
+            res['warn'].append(f'check could not fetch the climate normals itself: {e}')
+        A = app['tiles'].get('Averages')
+        if exp_nm is None:
+            if A:
+                res['fail'].append('averages tile shown, but no normals station is within 40 mi and 500 ft of elevation')
+            else:
+                res['info'].append('no normals station close enough here; averages tile correctly left out ✓')
+        elif exp_nm != 'skip':
+            if not A:
+                res['warn'].append(f"no averages tile (normals exist at {exp_nm['name']}; today's high may be unavailable)")
+            else:
+                al = A.split('\n')
+                kv = {al[i]: al[i + 1] for i in range(len(al) - 1)}
+                hi_app = num(next((kv[k] for k in kv if k.startswith('High')), None))
+                big = re.search(r'([+−]?)(\d+)°', A)
+                diff_app = (-1 if big and big.group(1) == '−' else 1) * int(big.group(2)) if big else None
+                wantN = [f"{jsround(exp_nm['hi'])}°", f"{jsround(exp_nm['lo'])}°"]
+                gotN = [kv.get('Normal high'), kv.get('Normal low')]
+                st_name = ' '.join(w if re.search(r'\d', w) else w.capitalize() for w in exp_nm['name'].split())
+                bad = []
+                if gotN != wantN:
+                    bad.append(f'normal high/low app {gotN} vs {wantN}')
+                if st_name.split()[0].lower() not in A.lower() or f"{jsround(exp_nm['dist'])} mi away" not in A:
+                    bad.append(f"station: app {al[-1]!r} vs {st_name}, {jsround(exp_nm['dist'])} mi")
+                if hi_app is None or diff_app != hi_app - jsround(exp_nm['hi']):
+                    bad.append(f'difference: app {big.group(0) if big else None} vs high {hi_app} - normal {wantN[0]}')
+                if bad:
+                    res['fail'].append('averages: ' + '; '.join(bad))
+                else:
+                    res['info'].append(f"averages tile: normal {wantN[0]}/{wantN[1]} at {exp_nm['name']} ({exp_nm['dist']:.0f} mi), {big.group(0)} vs normal ✓")
+
         # ---- metric units: same reading, converted
         if exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
             try:
@@ -672,6 +741,34 @@ async def check_place(browser, base, place, sem, results):
                 res['info'].append(f'day sheet: charts, {icons} icons, scrub readout "{" ".join(ro.split())}" ✓')
         except Exception as e:
             res['fail'].append(f'day sheet check failed: {e}')
+
+        # ---- each tile opens today's day sheet on its own chart
+        try:
+            r = await page.evaluate("""async () => {
+              const want = { feels: 'conditions', averages: 'conditions', humidity: 'humidity', wind: 'wind', precip: 'precip', visibility: 'visibility', pressure: 'pressure' };
+              const out = [];
+              for (const k of [...document.querySelectorAll('[data-tile]')].map(t => t.dataset.tile)) {
+                document.querySelector(`[data-tile="${k}"]`).click();
+                await new Promise(r => setTimeout(r, 120));
+                const sh = document.getElementById('daySheet'), tab = sh.querySelector('.tabs [aria-selected="true"]');
+                const chart = sh.querySelector('#c1 svg.ch'), msg = sh.querySelector('.panel > .sub, #c1 .sub');
+                const tabBox = tab && tab.getBoundingClientRect(), bar = tab && tab.parentElement.getBoundingClientRect();
+                out.push({ k, open: !sh.hidden, tab: tab && tab.dataset.metric, want: want[k], drawn: !!chart || !!msg || k === 'pressure',
+                  visible: !!tab && tabBox.left >= bar.left - 1 && tabBox.right <= bar.right + 1, today: !!sh.querySelector('.dchip[aria-current="true"].today') });
+                sh.querySelector('[data-close]').click();
+                await new Promise(r => setTimeout(r, 60));
+              }
+              return out;
+            }""")
+            bad = [f"{x['k']}: {x}" for x in r if not (x['open'] and x['tab'] == x['want'] and x['drawn'] and x['visible'] and x['today'])]
+            if bad:
+                res['fail'].append('tile details: ' + '; '.join(bad))
+            elif len(r) < 5:
+                res['fail'].append(f'only {len(r)} tiles open a detail view: {[x["k"] for x in r]}')
+            else:
+                res['info'].append(f"tiles open today's chart: {', '.join(x['k'] for x in r)} ✓")
+        except Exception as e:
+            res['fail'].append(f'tile details: {e}')
 
         # network hiccups (a source briefly failing, then retried) are logged by the browser but aren't bugs
         net = [e for e in errors if 'Failed to load resource' in e or 'CORS policy' in e or 'net::' in e]

@@ -8,10 +8,12 @@ Gridpoint is a single-page web app. There's no server code: each visitor's brows
 
 | On screen | Source |
 |---|---|
-| **Now** (temperature, feels like, humidity, wind, visibility, pressure) | The newest report from the nearest official weather station (NOAA/FAA airport stations), via the Iowa Environmental Mesonet, which relays reports within minutes, or api.weather.gov, whichever is newer. The station and time are always shown. If the newest report is over two hours old, Gridpoint shows the forecast for this hour and says so. |
+| **Now** (temperature, feels like, humidity, wind, visibility, pressure) | The newest report from the nearest official weather station (NOAA/FAA airport stations), via the Iowa Environmental Mesonet, which relays reports within minutes, or api.weather.gov, whichever is newer. The station and time are always shown. A station whose report has no wind reading (some small-airport sensors) is passed over for the next nearest that has one; if none nearby measures wind, wind shows as "--", never as calm. If the newest report is over two hours old, Gridpoint shows the forecast for this hour and says so. |
 | **Hourly and days 1–7** | The National Weather Service forecast for the place's 2.5 km grid square, issued by its local NWS office (api.weather.gov). |
 | **Daily high/low** | The NWS pairing: a day's high (7 AM–7 PM) with the low of the night that follows. Today's high switches to the measured high once the measured high beats the forecast. |
 | **Days 8–11** | NOAA's National Blend of Models (lower 48) or NOAA's GFS model (Alaska, Hawaii, Puerto Rico), via Open-Meteo, built into days the same way NWS builds them. Labeled as model guidance. |
+| **Averages** | NOAA's official 1991–2020 daily normal high and low, from the Regional Climate Centers' ACIS service (data.rcc-acis.org, the source weather.gov's NOWData uses), at the nearest station within 40 miles whose elevation is within 500 ft of the grid square's. The station and distance are shown; with no such station, the tile is left out. |
+| **Tile details** | Tapping a tile opens today's chart for it: measured values (gray) from the same station, then the NWS forecast. Visibility's forecast comes from the NWS grid (about a day ahead). NWS doesn't forecast pressure, so the pressure chart shows only measured values. |
 | **Feels like** | NWS wind chill (≤ 50°F, wind ≥ 3 mph) and NWS heat index (≥ 80°F). |
 | **Sunrise / sunset** | NOAA solar calculator equations, solved at each event (within about 20 seconds of the astral library). |
 | **Moon phases** | Meeus, *Astronomical Algorithms*, ch. 49 (within a minute or two of the ephem library). |
@@ -69,4 +71,4 @@ WARN lines are worth a look but are often timing: a new station report or foreca
 
 ## Data credits
 
-National Weather Service / NOAA (api.weather.gov, public domain) · Iowa Environmental Mesonet, Iowa State University · Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), free for non-commercial use · Place names from [GeoNames](https://www.geonames.org/) (CC BY 4.0) · ZIP codes from the [zipcodes](https://www.npmjs.com/package/zipcodes) package (BSD).
+National Weather Service / NOAA (api.weather.gov, public domain) · Iowa Environmental Mesonet, Iowa State University · Climate normals from NOAA NCEI via the Regional Climate Centers' ACIS · Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0), free for non-commercial use · Place names from [GeoNames](https://www.geonames.org/) (CC BY 4.0) · ZIP codes from the [zipcodes](https://www.npmjs.com/package/zipcodes) package (BSD).
