@@ -809,7 +809,15 @@ async def check_alerts(browser, base, results):
             continue
         ring = g['coordinates'][0]
         cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
-        if inside((cx, cy), ring):
+        if not inside((cx, cy), ring):
+            continue
+        # the centroid can land across the border or far out at sea, where weather.gov has no data (and the app
+        # rightly shows none): use it only if the app's own request for alerts there lists this event
+        try:
+            here = await asyncio.to_thread(get_json, f'https://api.weather.gov/alerts/active?point={cy:.4f},{cx:.4f}')
+        except Exception:
+            continue
+        if f['properties']['event'] in [x['properties']['event'] for x in here.get('features', [])]:
             picks.append((f['properties'], cy, cx))
         if len(picks) >= 2:
             break
