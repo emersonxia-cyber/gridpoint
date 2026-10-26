@@ -1093,17 +1093,25 @@ async function getOffice(id) {
   store.set(key, { t: Date.now(), v });
   return v;
 }
+/* Some stations (often small-airport AWOS units) report temperature but have no working wind sensor.
+   Use the nearest station whose report is complete; only if none of them measure wind, fall back to
+   the nearest with a temperature, and the wind then shows as not reported (never as calm). */
+const obsHasWind = o => !!(o && o.windSpeed && isNum(o.windSpeed.value));
 async function getObservation(stations) {
+  let partial = null;
   for (const s of stations.slice(0, 4)) {
     try {
       /* NOAA often posts the newest report blank while it's still being processed,
          so take the newest of the last few that actually has a temperature in it */
       const j = await nws(`/stations/${s.id}/observations?limit=6`, { retries: 1, timeout: 12000 });
       const o = (j.features || []).map(f => f.properties).find(p => p && p.temperature && isNum(p.temperature.value));
-      if (o && Date.now() - Date.parse(o.timestamp) < 3 * HOUR) return { obs: o, station: s };
+      if (o && Date.now() - Date.parse(o.timestamp) < 3 * HOUR) {
+        if (obsHasWind(o)) return { obs: o, station: s };
+        if (!partial) partial = { obs: o, station: s };
+      }
     } catch (e) { /* try the next station */ }
   }
-  return null;
+  return partial;
 }
 /* The same airport stations, from the Iowa Environmental Mesonet (Iowa State University). It relays
    each NOAA/FAA airport report within minutes, while api.weather.gov often runs up to an hour behind. */
@@ -1113,11 +1121,16 @@ async function getIEM(stations) {
   const qs = list.map(s => 'station=' + encodeURIComponent(iemId(s.id))).join('&');
   const j = await getJSON('https://mesonet.agron.iastate.edu/api/1/currents.json?' + qs, { retries: 1, timeout: 8000 });
   const rows = (j && Array.isArray(j.data)) ? j.data : [];
+  let partial = null;
   for (const s of list) {
     const d = rows.find(r => r.station === iemId(s.id) && /_ASOS$/.test(r.network || ''));
-    if (d && isNum(d.tmpf) && d.utc_valid && Date.now() - Date.parse(d.utc_valid) < 2 * HOUR) return { obs: iemToObs(d, s), station: s };
+    if (d && isNum(d.tmpf) && d.utc_valid && Date.now() - Date.parse(d.utc_valid) < 2 * HOUR) {
+      const ob = { obs: iemToObs(d, s), station: s };
+      if (obsHasWind(ob.obs)) return ob;
+      if (!partial) partial = ob;
+    }
   }
-  return null;
+  return partial;
 }
 function iemToObs(d, s) {
   const num = v => (v == null || v === '' || isNaN(+v)) ? null : +v;
@@ -1125,7 +1138,7 @@ function iemToObs(d, s) {
   const fToC = v => isNum(num(v)) ? (num(v) - 32) * 5 / 9 : null;
   const t = Date.parse(d.utc_valid);
   const wx = metarCondition(d, sunAltitude(t, s.lat, s.lon) > -0.833);
-  const calm = !num(d.sknt);
+  const calm = num(d.sknt) === 0;
   return {
     timestamp: new Date(t).toISOString(), src: 'iem',
     temperature: { value: fToC(d.tmpf) }, dewpoint: { value: fToC(d.dwpf) }, relativeHumidity: { value: num(d.relh) },
@@ -1438,7 +1451,7 @@ function buildModel(place, pt, r, ob) {
       if (best && Math.abs(best.t - target) < 1.5 * HOUR) pTrend = pNow - best.pressure;
     }
     current = {
-      src: 'obs', t: Date.parse(o.timestamp), tempF, rh, dewF: cToF(o.dewpoint && o.dewpoint.value), windMph: isNum(windMph) ? windMph : 0, gustMph,
+      src: 'obs', t: Date.parse(o.timestamp), tempF, rh, dewF: cToF(o.dewpoint && o.dewpoint.value), windMph: isNum(windMph) ? windMph : null, gustMph,
       dir: o.windDirection ? o.windDirection.value : null, feelsF: isNum(wc) ? cToF(wc) : isNum(hi) ? cToF(hi) : feelsLike(tempF, rh, windMph || 0),
       pressure: pNow, pTrend, visMi: mToMi(o.visibility && o.visibility.value),
       text: o.textDescription || (nextHour && nextHour.text) || '', code: o.code || ic.code || (nextHour && nextHour.code) || 'sct',
@@ -2168,7 +2181,7 @@ function tiles(m) {
   // humidity
   add(w => tile('humid', $t('Humidity'), `<div class="big">${isNum(c.rh) ? Math.round(c.rh) + '%' : '--'}</div><div class="small">${isNum(c.dewF) ? esc($t('The dew point is {t} right now.', { t: fmtT(c.dewF) })) : ''}</div>`, w));
   // wind (always wide)
-  add(w => tile('wind', $t('Wind'), `<div class="windwrap">${compass(c.dir, c.windMph)}<dl class="kv" style="flex:1"><dt>${esc($t('Wind'))}</dt><dd>${fmtWind(c.windMph)}</dd><dt>${esc($t('Gusts'))}</dt><dd>${isNum(c.gustMph) ? fmtWind(c.gustMph) : '—'}</dd><dt>${esc($t('Direction'))}</dt><dd>${isNum(c.dir) ? `${Math.round(c.dir)}° ${esc(dirLabel(c.dir))}` : esc(c.windMph >= 1 ? $t('Variable') : $t('Calm'))}</dd></dl></div>`, w), true);
+  add(w => tile('wind', $t('Wind'), `<div class="windwrap">${compass(c.dir, c.windMph)}<dl class="kv" style="flex:1"><dt>${esc($t('Wind'))}</dt><dd>${fmtWind(c.windMph)}</dd><dt>${esc($t('Gusts'))}</dt><dd>${isNum(c.gustMph) ? fmtWind(c.gustMph) : '—'}</dd><dt>${esc($t('Direction'))}</dt><dd>${!isNum(c.windMph) ? '—' : isNum(c.dir) ? `${Math.round(c.dir)}° ${esc(dirLabel(c.dir))}` : esc(c.windMph >= 1 ? $t('Variable') : $t('Calm'))}</dd></dl></div>`, w), true);
   // precipitation next 24h
   const next = m.hourly.filter(h => h.t >= now - HOUR && h.t < now + 24 * HOUR);
   const qpf = next.reduce((s, h) => s + (isNum(h.qpf) ? h.qpf : 0), 0);

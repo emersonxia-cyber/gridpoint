@@ -29,6 +29,7 @@ station report arriving between the app's fetch and this script's).
 """
 import argparse, asyncio, datetime as dt, functools, http.server, json, math, os, re, socketserver, sys, threading, time, urllib.parse, urllib.request
 from zoneinfo import ZoneInfo
+from decimal import Decimal, ROUND_HALF_UP
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # the app's folder: next to this script (as in the repo), or one up (tests/check.py)
@@ -113,10 +114,10 @@ def c2f(c):
 
 
 def expected_now(stations):
-    """The app's rule: nearest of the first four stations with a valid temperature;
-    the newer of weather.gov (<3 h old) and the Iowa Mesonet (<2 h old)."""
+    """The app's rule: nearest of the first four stations with a valid temperature and a wind reading
+    (or, if none has wind, the nearest with a temperature); the newer of weather.gov (<3 h old) and the Iowa Mesonet (<2 h old)."""
     now = time.time()
-    nws = None
+    nws = nws_partial = None
     for sid in stations[:4]:
         try:
             j = get_json(f'https://api.weather.gov/stations/{sid}/observations?limit=6')
@@ -129,15 +130,19 @@ def expected_now(stations):
                 if now - t < 3 * HOUR:
                     v = lambda k: (p.get(k) or {}).get('value')
                     nws = {'station': sid, 't': t, 'tempF': c2f(v('temperature')), 'via': 'nws', 'rh': v('relativeHumidity'),
-                           'dewF': c2f(v('dewpoint')), 'windMph': (v('windSpeed') or 0) / 1.609344,
+                           'dewF': c2f(v('dewpoint')), 'windMph': v('windSpeed') / 1.609344 if v('windSpeed') is not None else None,
                            'gustMph': v('windGust') / 1.609344 if v('windGust') is not None else None, 'dir': v('windDirection'),
                            'visMi': v('visibility') / 1609.344 if v('visibility') is not None else None,
                            'inHg': v('barometricPressure') / 3386.389 if v('barometricPressure') is not None else None,
                            'windChillF': c2f(v('windChill')), 'heatIndexF': c2f(v('heatIndex'))}
                 break
+        if nws and nws['windMph'] is None:
+            nws_partial = nws_partial or nws
+            nws = None
         if nws:
             break
-    iem = None
+    nws = nws or nws_partial
+    iem = iem_partial = None
     ids = [s[1:] if re.fullmatch(r'K[A-Z0-9]{3}', s) else s for s in stations[:4]]
     try:
         j = get_json('https://mesonet.agron.iastate.edu/api/1/currents.json?' + '&'.join('station=' + i for i in ids), headers={'User-Agent': UA['User-Agent']})
@@ -148,13 +153,17 @@ def expected_now(stations):
                 t = dt.datetime.fromisoformat(d['utc_valid'].replace('Z', '+00:00')).timestamp()
                 if now - t < 2 * HOUR:
                     f = lambda k: None if d.get(k) in (None, '') else float(d[k])
-                    kt = f('sknt') or 0
+                    kt = f('sknt')
                     iem = {'station': sid, 't': t, 'tempF': f('tmpf'), 'via': 'iem', 'rh': f('relh'), 'dewF': f('dwpf'),
-                           'windMph': kt * 1.852 / 1.609344, 'gustMph': f('gust') * 1.852 / 1.609344 if f('gust') is not None else None,
-                           'dir': f('drct') if kt else None, 'visMi': f('vsby'), 'inHg': f('alti'), 'windChillF': None, 'heatIndexF': None}
-                    break
+                           'windMph': kt * 1.852 / 1.609344 if kt is not None else None, 'gustMph': f('gust') * 1.852 / 1.609344 if f('gust') is not None else None,
+                           'dir': f('drct') if kt != 0 else None, 'visMi': f('vsby'), 'inHg': f('alti'), 'windChillF': None, 'heatIndexF': None}
+                    if kt is not None:
+                        break
+                    iem_partial = iem_partial or iem
+                    iem = None
     except Exception:
         pass
+    iem = iem or iem_partial
     if nws and iem:
         return iem if iem['t'] > nws['t'] else nws
     return nws or iem
@@ -184,21 +193,23 @@ DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW
 def tile_expectations(o):
     """What each tile should read for the reading shown as "now"."""
     out = {}
-    feels = o['windChillF'] if o.get('windChillF') is not None else o['heatIndexF'] if o.get('heatIndexF') is not None else feels_like(o['tempF'], o['rh'], o['windMph'])
+    feels = o['windChillF'] if o.get('windChillF') is not None else o['heatIndexF'] if o.get('heatIndexF') is not None else feels_like(o['tempF'], o['rh'], o['windMph'] or 0)
     out['Feels like'] = f"{jsround(feels)}°"
     if o['rh'] is not None:
         out['Humidity'] = f"{jsround(o['rh'])}%"
     if o['dewF'] is not None:
         out['Dew point'] = f"dew point is {jsround(o['dewF'])}°"
-    out['Wind'] = f"{jsround(o['windMph'])} mph"
+    out['Wind'] = f"{jsround(o['windMph'])} mph" if o['windMph'] is not None else '--'
     out['Gusts'] = f"{jsround(o['gustMph'])} mph" if o['gustMph'] is not None else '—'
-    if o['dir'] is not None:
+    if o['windMph'] is None:
+        out['Direction'] = '—'
+    elif o['dir'] is not None:
         out['Direction'] = f"{jsround(o['dir'])}° {DIRS[int(math.floor(o['dir'] / 22.5 + 0.5)) % 16]}"
     else:
         out['Direction'] = 'Variable' if o['windMph'] >= 1 else 'Calm'
     if o['visMi'] is not None:
         v = o['visMi']
-        out['Visibility'] = '10+ mi' if v >= 9.95 else (f'{v:.1f} mi' if v < 1 else f'{jsround(v)} mi')
+        out['Visibility'] = '10+ mi' if v >= 9.95 else (f"{Decimal(v).quantize(Decimal('0.1'), ROUND_HALF_UP)} mi" if v < 1 else f'{jsround(v)} mi')
     if o['inHg'] is not None:
         out['Pressure'] = f"{o['inHg']:.2f} inHg"
     return out
@@ -461,7 +472,7 @@ async def check_place(browser, base, place, sem, results):
                 await page.wait_for_timeout(150)
                 mt = await page.evaluate("[document.querySelector('.hero-temp').textContent, document.querySelector('.tile.wide') ? document.querySelector('.tile.wide').innerText : '']")
                 wantC = f"{jsround((exp_now['tempF'] - 32) * 5 / 9)}°"
-                wantW = f"{jsround(exp_now['windMph'] * 1.609344)} km/h"
+                wantW = f"{jsround(exp_now['windMph'] * 1.609344)} km/h" if exp_now['windMph'] is not None else '--'
                 if wantC not in mt[0] or wantW not in mt[1]:
                     res['fail'].append(f"metric: app {mt[0]!r} / wind tile {mt[1].split(chr(10))[-5:]} vs {wantC}, {wantW}")
                 else:
