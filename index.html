@@ -1234,10 +1234,12 @@ function parseAFD(text) {
   const out = [];
   const body = text.replace(/\r/g, '').split(/\n\$\$/)[0];
   for (const block of body.split(/\n&&[ \t]*\n/)) {
-    /* headings look like ".SHORT TERM /THROUGH TUESDAY/..." or ".SHORT TERM FORECAST (Days 1 through 3)..." */
-    const m = /(?:^|\n)\.([A-Z][^\n]*?)\.\.\.([^\n]*)\n([\s\S]*)$/.exec(block);
+    /* headings look like ".SHORT TERM /THROUGH TUESDAY/..." or ".SHORT TERM FORECAST (Days 1 through 3)...",
+       and a long one can wrap inside its parentheses (Anchorage: ".SHORT TERM FORECAST SOUTHCENTRAL ALASKA (Days 1
+       through 3: Today" + "through Wednesday)...") */
+    const m = /(?:^|\n)\.([A-Z][^\n]*?(?:\n[^\n]*?[)\/])?)\.\.\.([^\n]*)\n([\s\S]*)$/.exec(block);
     if (!m) continue;
-    const name = m[1].replace(/\s*[\/(].*$/, '').trim();
+    const name = m[1].replace(/\s*[\/(][\s\S]*$/, '').trim();
     if (!AFD_KEEP.test(name)) continue;
     let rest = (m[2].trim() ? m[2].trim() + '\n' : '') + m[3], issued = '';
     rest = rest.replace(/^\s*Issued at ([^\n]+)\n/i, (_, x) => { issued = x.trim(); return ''; });
