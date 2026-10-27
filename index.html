@@ -489,7 +489,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-26 14:30 UTC';
+const APP_BUILD = '2026-10-27 00:13 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -1432,7 +1432,7 @@ function buildModel(place, pt, r, ob) {
   if (!nbm && !r.extPending) notices.push(tk("The extended outlook didn't load this time, so the forecast stops at 7 days."));
   const g = grid && grid.properties;
   const gm = {
-    feels: expand(g && g.apparentTemperature, cToF), gust: expand(g && g.windGust, kmhToMph), sky: expand(g && g.skyCover),
+    feels: expand(g && g.apparentTemperature, cToF), wind: expand(g && g.windSpeed, kmhToMph), gust: expand(g && g.windGust, kmhToMph), sky: expand(g && g.skyCover),
     qpf: expand(g && g.quantitativePrecipitation, mmToIn, true), snow: expand(g && g.snowfallAmount, mmToIn, true),
     vis: expand(g && g.visibility, mToMi),
   };
@@ -1441,7 +1441,8 @@ function buildModel(place, pt, r, ob) {
   const hourly = [];
   if (hr) for (const p of hr.properties.periods || []) {
     const t = Date.parse(p.startTime), k = hourKey(t), ic = nwsIcon(p.icon), w = parseWind(p.windSpeed);
-    const tempF = p.temperature, rh = p.relativeHumidity ? p.relativeHumidity.value : null, windMph = isNum(w.hi) ? w.hi : 0;
+    /* wind from the grid, like gusts: some offices (Twin Cities, Phoenix) round the hourly forecast's to the nearest 5 mph */
+    const tempF = p.temperature, rh = p.relativeHumidity ? p.relativeHumidity.value : null, windMph = gm.wind.has(k) ? gm.wind.get(k) : isNum(w.hi) ? w.hi : 0;
     const feels = gm.feels.get(k);
     hourly.push({
       t, tempF, feelsF: isNum(feels) ? feels : feelsLike(tempF, rh, windMph), pop: (p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value) || 0,
@@ -2866,7 +2867,12 @@ function chart(o) {
     }
     if (pastPts.length) s += draw(pastPts, 'rgba(255,255,255,.45)', 'rgba(255,255,255,.07)', { width: 2.5 });
     s += draw(futPts, lineCol, o.area ? areaCol : null);
-    for (const ex of o.extra || []) if (ex.dash) s += draw(ex.pts.filter(p => isNum(p.v)), ex.color, null, { dash: true, width: 2 });
+    for (const ex of o.extra || []) if (ex.dash) {
+      /* a dashed forecast starts at "now" too, not at the top of the hour that's under way */
+      let pts = ex.pts.filter(p => isNum(p.v));
+      if (now && pts.length && pts[0].t < now) pts = [{ t: now, v: interp(pts, now) }].concat(pts.filter(p => p.t > now));
+      s += draw(pts, ex.color, null, { dash: true, width: 2 });
+    }
     const all = pastPts.concat(futPts);
     if (o.hilo && all.length > 2) {
       const mx = all.reduce((b, p) => p.v > b.v ? p : b), mn = all.reduce((b, p) => p.v < b.v ? p : b);
