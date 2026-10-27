@@ -489,7 +489,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-27 00:13 UTC';
+const APP_BUILD = '2026-10-27 00:38 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -2661,9 +2661,11 @@ function drawDayCharts(m, d) {
     const mx = Math.max(10, ...sp.concat(spPast, gu, guPast).map(p => p.v));
     const step = mx > 40 ? 10 : 5;
     const pool = past.concat(fut).filter(h => isNum(h.windMph)).sort((a, b) => a.t - b.t);
+    /* stations report a gust only when one comes; draw each hour's strongest, so a gusty day doesn't turn into a barcode */
+    const peaks = Object.values(guPast.reduce((by, p) => { const k = Math.floor(p.t / HOUR); if (!by[k] || p.v > by[k].v) by[k] = p; return by; }, {})).sort((a, b) => a.t - b.t);
     paint(box1, {
       w, h: 200, t0, t1, tz, yMin: 0, yMax: Math.ceil((mx + 1) / step) * step, yStep: step, yFmt: v => String(v), now: nowIn, past: spPast, fut: sp, lead: L(h => windDisp(h.windMph)),
-      color: '#8BE0C6', area: true, extra: [{ pts: gu, color: 'rgba(255,255,255,.75)', dash: true }, { pts: guPast, color: 'rgba(255,255,255,.75)', dots: true }],
+      color: '#8BE0C6', area: true, extra: [{ pts: gu, color: 'rgba(255,255,255,.75)', dash: true }, { pts: peaks, color: 'rgba(255,255,255,.5)', dots: true, stems: spPast }],
       scrub: {
         head: 'dhead', mode: 'point', fmt: p => {
           const h = nearestOf(pool, p.t);
@@ -2862,7 +2864,9 @@ function chart(o) {
     }
     for (const ex of o.extra || []) {
       const pts = ex.pts.filter(p => isNum(p.v));
-      if (ex.dots) s += pts.map(p => `<circle cx="${X(p.t).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2.3" fill="${ex.color}"/>`).join('');
+      /* a stem from the line each dot rises above (a measured gust from the wind at that moment), so it reads as a spike, not a stray mark */
+      if (ex.dots) s += pts.map(p => { const b = ex.stems ? interp(ex.stems, p.t) : null, x = X(p.t).toFixed(1);
+        return (isNum(b) && b < p.v ? `<line x1="${x}" x2="${x}" y1="${Y(b).toFixed(1)}" y2="${Y(p.v).toFixed(1)}" stroke="${ex.color}" stroke-width="1.2"/>` : '') + `<circle cx="${x}" cy="${Y(p.v).toFixed(1)}" r="2.3" fill="${ex.color}"/>`; }).join('');
       else if (!ex.dash) s += draw(pts, ex.color, null, { width: ex.width || 2 });
     }
     if (pastPts.length) s += draw(pastPts, 'rgba(255,255,255,.45)', 'rgba(255,255,255,.07)', { width: 2.5 });
