@@ -457,6 +457,9 @@ async def check_place(browser, base, place, sem, results):
             await page.wait_for_function("(document.querySelector('.hero-temp') && document.querySelector('.hero-temp').textContent.trim() !== '--') || document.querySelector('.state')", timeout=120000)
             await page.wait_for_timeout(1200)
             app = await page.evaluate(EXTRACT)
+            # the screen is as of this moment; compare it with the sources as of then, since the
+            # fetches below can take minutes (past the top of an hour, when "now" moves on)
+            t_app = time.time()
         except Exception as e:
             res['fail'].append(f'app did not finish loading: {e}')
             await ctx.close()
@@ -477,7 +480,7 @@ async def check_place(browser, base, place, sem, results):
             await ctx.close()
             return
 
-        now_local = dt.datetime.now(zone)
+        now_local = dt.datetime.fromtimestamp(t_app, zone)
         today = now_local.date()
 
         # ---- now
@@ -573,7 +576,7 @@ async def check_place(browser, base, place, sem, results):
         # ---- hourly strip vs NWS hourly
         def hourly_mismatch(hj):
             periods = hj['properties']['periods']
-            start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > time.time()), 0)
+            start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > t_app), 0)
             out = []
             for k, h in enumerate(app['hours'][1:7], start=1):
                 if start + k >= len(periods):
@@ -691,7 +694,7 @@ async def check_place(browser, base, place, sem, results):
 
         # ---- moon phases vs ephem
         if app['moon']:
-            want = moon_phases(dt.datetime.now(dt.timezone.utc))
+            want = moon_phases(dt.datetime.fromtimestamp(t_app, dt.timezone.utc))
             okm = True
             for line, (when, nm) in zip([l for l in app['moon'] if ':' in l][:2], want):
                 m = re.match(r'(.+?): (\w{3}) (\d{1,2}), (.+)', line.strip())
@@ -780,10 +783,14 @@ async def check_place(browser, base, place, sem, results):
               return out;
             }""")
             bad = [f"{x['k']}: {x}" for x in r if not (x['open'] and x['tab'] == x['want'] and x['drawn'] and x['visible'] and x['today'])]
+            # feels like, humidity, wind and precipitation always show; visibility and pressure only when the station
+            # reading has them (not while "now" shows the forecast for this hour), averages only with a normals station
+            need = ['feels', 'humidity', 'wind', 'precip'] + [k for k, lbl in (('visibility', 'Visibility'), ('pressure', 'Pressure'), ('averages', 'Averages')) if lbl in app['tiles']]
+            missing = [k for k in need if k not in [x['k'] for x in r]]
             if bad:
                 res['fail'].append('tile details: ' + '; '.join(bad))
-            elif len(r) < 5:
-                res['fail'].append(f'only {len(r)} tiles open a detail view: {[x["k"] for x in r]}')
+            elif missing:
+                res['fail'].append(f"tiles don't open a detail view: {missing} (these open: {[x['k'] for x in r]})")
             else:
                 res['info'].append(f"tiles open today's chart: {', '.join(x['k'] for x in r)} ✓")
         except Exception as e:
