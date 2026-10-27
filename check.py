@@ -497,8 +497,12 @@ async def check_place(browser, base, place, sem, results):
             else:
                 res['warn'].append('no station report in the last 2-3 hours; app correctly falls back to the forecast')
 
-        # ---- tiles vs the same reading
-        if exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
+        # ---- tiles vs the same reading (the same report, not just the same temperature: Phoenix's 5:05 PM report was
+        # 82° and 3 mph WSW, its 5:10 PM report 82° and calm)
+        shown = exp_now and parse_clock(app['src'], zone, dt.datetime.fromtimestamp(exp_now['t'], zone).date())
+        if exp_now and exp_now['station'] in (app['src'] or '') and shown and abs(shown.timestamp() - exp_now['t']) >= 60:
+            res['warn'].append(f"tiles: app shows the {shown:%I:%M %p} report, the newest is {dt.datetime.fromtimestamp(exp_now['t'], zone):%I:%M %p} (a new report landed in between)")
+        elif exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
             want = tile_expectations(exp_now)
             T = app['tiles']
             got = {
