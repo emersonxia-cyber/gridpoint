@@ -305,6 +305,20 @@ def ext_days(j, zone):
             for d, a in acc.items() if a['n'] >= 20 and len(a['hi']) >= 10}
 
 
+def grid_hours(j, name):
+    """One NWS forecast-grid series spread out hour by hour (epoch seconds -> value), as the app does."""
+    out = {}
+    for v in ((j['properties'].get(name) or {}).get('values') or []):
+        if v['value'] is None:
+            continue
+        start, dur = v['validTime'].split('/')
+        m = re.match(r'P(?:(\d+)D)?(?:T(?:(\d+)H)?)?', dur)
+        t = dt.datetime.fromisoformat(start).timestamp()
+        for i in range(max(1, int(m[1] or 0) * 24 + int(m[2] or 0))):
+            out[t + i * HOUR] = v['value']
+    return out
+
+
 def nws_rows(periods, zone):
     """Day period + the night after it, the way weather.gov's 7-day forecast pairs them."""
     rows, i = [], 0
@@ -435,6 +449,11 @@ async def check_place(browser, base, place, sem, results):
         except Exception as e:
             res['fail'].append(f'weather.gov unavailable for this point: {e}')
             return
+        try:
+            gj = await asyncio.to_thread(get_json, pp['forecastGridData'])
+        except Exception as e:
+            gj = None
+            res['warn'].append(f'check could not fetch the forecast grid itself: {e}')
         res['info'].append(f"NWS {pp['gridId']} {pp['gridX']},{pp['gridY']} · {pp['timeZone']} · radar {pp.get('radarStation')} · stations {' '.join(stations[:4])}")
 
         # ---- the app
@@ -453,6 +472,9 @@ async def check_place(browser, base, place, sem, results):
             await page.wait_for_function("(document.querySelector('.hero-temp') && document.querySelector('.hero-temp').textContent.trim() !== '--') || document.querySelector('.state')", timeout=120000)
             await page.wait_for_timeout(1200)
             app = await page.evaluate(EXTRACT)
+            # the screen is as of this moment; compare it with the sources as of then, since the
+            # fetches below can take minutes (past the top of an hour, when "now" moves on)
+            t_app = time.time()
         except Exception as e:
             res['fail'].append(f'app did not finish loading: {e}')
             await ctx.close()
@@ -473,7 +495,7 @@ async def check_place(browser, base, place, sem, results):
             await ctx.close()
             return
 
-        now_local = dt.datetime.now(zone)
+        now_local = dt.datetime.fromtimestamp(t_app, zone)
         today = now_local.date()
 
         # ---- now
@@ -493,8 +515,12 @@ async def check_place(browser, base, place, sem, results):
             else:
                 res['warn'].append('no station report in the last 2-3 hours; app correctly falls back to the forecast')
 
-        # ---- tiles vs the same reading
-        if exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
+        # ---- tiles vs the same reading (the same report, not just the same temperature: Phoenix's 5:05 PM report was
+        # 82° and 3 mph WSW, its 5:10 PM report 82° and calm)
+        shown = exp_now and parse_clock(app['src'], zone, dt.datetime.fromtimestamp(exp_now['t'], zone).date())
+        if exp_now and exp_now['station'] in (app['src'] or '') and shown and abs(shown.timestamp() - exp_now['t']) >= 60:
+            res['warn'].append(f"tiles: app shows the {shown:%I:%M %p} report, the newest is {dt.datetime.fromtimestamp(exp_now['t'], zone):%I:%M %p} (a new report landed in between)")
+        elif exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
             want = tile_expectations(exp_now)
             T = app['tiles']
             got = {
@@ -569,7 +595,7 @@ async def check_place(browser, base, place, sem, results):
         # ---- hourly strip vs NWS hourly
         def hourly_mismatch(hj):
             periods = hj['properties']['periods']
-            start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > time.time()), 0)
+            start = next((i for i, p in enumerate(periods) if dt.datetime.fromisoformat(p['endTime']).timestamp() > t_app), 0)
             out = []
             for k, h in enumerate(app['hours'][1:7], start=1):
                 if start + k >= len(periods):
@@ -693,7 +719,7 @@ async def check_place(browser, base, place, sem, results):
 
         # ---- moon phases vs ephem
         if app['moon']:
-            want = moon_phases(dt.datetime.now(dt.timezone.utc))
+            want = moon_phases(dt.datetime.fromtimestamp(t_app, dt.timezone.utc))
             okm = True
             for line, (when, nm) in zip([l for l in app['moon'] if ':' in l][:2], want):
                 m = re.match(r'(.+?): (\w{3}) (\d{1,2}), (.+)', line.strip())
@@ -782,14 +808,69 @@ async def check_place(browser, base, place, sem, results):
               return out;
             }""")
             bad = [f"{x['k']}: {x}" for x in r if not (x['open'] and x['tab'] == x['want'] and x['drawn'] and x['visible'] and x['today'])]
+            # feels like, humidity, wind and precipitation always show; visibility and pressure only when the station
+            # reading has them (not while "now" shows the forecast for this hour), averages only with a normals station
+            need = ['feels', 'humidity', 'wind', 'precip'] + [k for k, lbl in (('visibility', 'Visibility'), ('pressure', 'Pressure'), ('averages', 'Averages')) if lbl in app['tiles']]
+            missing = [k for k in need if k not in [x['k'] for x in r]]
             if bad:
                 res['fail'].append('tile details: ' + '; '.join(bad))
-            elif len(r) < 5:
-                res['fail'].append(f'only {len(r)} tiles open a detail view: {[x["k"] for x in r]}')
+            elif missing:
+                res['fail'].append(f"tiles don't open a detail view: {missing} (these open: {[x['k'] for x in r]})")
             else:
                 res['info'].append(f"tiles open today's chart: {', '.join(x['k'] for x in r)} ✓")
         except Exception as e:
             res['fail'].append(f'tile details: {e}')
+
+        # ---- wind sheet: forecast wind and gusts as the NWS grid has them (some offices round the hourly
+        # forecast's wind to the nearest 5 mph), and the gust forecast starting at "now" like the wind line
+        try:
+            await page.click('[data-tile="wind"]', timeout=8000)
+            await page.wait_for_selector('#daySheet:not([hidden]) #c1 svg', timeout=8000)
+            starts = await page.evaluate("""() => { const s = document.querySelector('#c1 svg'), d = s.querySelector('path[stroke-dasharray]'), n = s.querySelector(':scope > circle[r="5.5"]');
+              return d && n ? [parseFloat(d.getAttribute('d').slice(1)), +n.getAttribute('cx')] : null; }""")
+            day1 = today + dt.timedelta(days=1)
+            await page.click(f'#daySheet .dchip[data-goto="{day1}"]')
+            await page.wait_for_selector(f'#daySheet .dchip[data-goto="{day1}"][aria-current="true"]', timeout=8000)
+            await page.wait_for_timeout(300)
+            svg = await page.query_selector('#c1 svg')
+            bb, w = await svg.bounding_box(), float(await svg.get_attribute('width'))
+            t0, t1 = (dt.datetime.combine(day1 + dt.timedelta(days=k), dt.time(), zone).timestamp() for k in (0, 1))
+            got = {}
+            for hh in range(3, 24, 3):
+                t = dt.datetime.combine(day1, dt.time(hh), zone).timestamp()
+                await page.mouse.move(bb['x'] + (6 + (t - t0) / (t1 - t0) * (w - 46)) / w * bb['width'], bb['y'] + bb['height'] / 2)
+                await page.wait_for_timeout(60)
+                got[t] = await page.evaluate("(() => { const r = document.querySelector('#dhead .ro'); return r && [r.querySelector('.ro-val').innerText, (r.querySelector('.ro-sub') || {}).innerText || '']; })()")
+            await page.keyboard.press('Escape')
+
+            def wind_mismatch(gj):
+                wind, gust, out = grid_hours(gj, 'windSpeed'), grid_hours(gj, 'windGust'), []
+                for t, ro in got.items():
+                    if t not in wind or not ro:
+                        continue
+                    hh = dt.datetime.fromtimestamp(t, zone).strftime('%I %p').lstrip('0')
+                    if ro[0] != f'{jsround(wind[t] / 1.609344)} mph':
+                        out.append(f'{hh} wind app {ro[0]} vs grid {wind[t] / 1.609344:.1f} mph')
+                    if t in gust and f'Gusts {jsround(gust[t] / 1.609344)} mph' not in ro[1]:
+                        out.append(f'{hh} gusts app {ro[1]!r} vs grid {gust[t] / 1.609344:.1f} mph')
+                return out
+            bad = wind_mismatch(gj) if gj else []
+            if bad:
+                versions = await nws_versions(pp['forecastGridData'], gj)
+                if any(not wind_mismatch(v) for v in versions):
+                    bad = []
+            if starts and starts[0] < starts[1] - 0.5:
+                bad.insert(0, f"today's gust forecast starts {starts[1] - starts[0]:.0f} px before now")
+            wind = grid_hours(gj, 'windSpeed') if gj else {}
+            n = sum(1 for t, ro in got.items() if ro and t in wind)
+            if bad:
+                res['fail'].append('wind sheet: ' + '; '.join(bad[:4]))
+            elif not n:
+                res['warn'].append('wind sheet: no forecast hours to compare with the grid')
+            else:
+                res['info'].append(f'wind sheet: forecast wind and gusts match the NWS grid ({n} hours), gust forecast starts at now ✓')
+        except Exception as e:
+            res['fail'].append(f'wind sheet check failed: {e}')
 
         # network hiccups (a source briefly failing, then retried) are logged by the browser but aren't bugs
         net = [e for e in errors if 'Failed to load resource' in e or 'CORS policy' in e or 'net::' in e]
@@ -830,7 +911,15 @@ async def check_alerts(browser, base, results):
             continue
         ring = g['coordinates'][0]
         cx, cy = sum(p[0] for p in ring) / len(ring), sum(p[1] for p in ring) / len(ring)
-        if inside((cx, cy), ring):
+        if not inside((cx, cy), ring):
+            continue
+        # the centroid can land across the border or far out at sea, where weather.gov has no data (and the app
+        # rightly shows none): use it only if the app's own request for alerts there lists this event
+        try:
+            here = await asyncio.to_thread(get_json, f'https://api.weather.gov/alerts/active?point={cy:.4f},{cx:.4f}')
+        except Exception:
+            continue
+        if f['properties']['event'] in [x['properties']['event'] for x in here.get('features', [])]:
             picks.append((f['properties'], cy, cx))
         if len(picks) >= 2:
             break
