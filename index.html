@@ -489,7 +489,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-10-27 00:38 UTC';
+const APP_BUILD = '2026-11-04 13:53 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -1223,11 +1223,14 @@ async function getAlerts(place) {
 }
 async function getDiscussion(office) {
   const list = await getJSON(`${NWS}/products/types/AFD/locations/${office}`, { retries: 1, accept: 'application/ld+json' });
-  const first = list && list['@graph'] && list['@graph'][0];
-  if (!first) return null;
-  const p = await getJSON(`${NWS}/products/${first.id}`, { retries: 1, accept: 'application/ld+json' });
-  const sections = parseAFD(p.productText || '');
-  return sections.length ? { issued: Date.parse(p.issuanceTime), sections } : null;
+  /* a quick update can leave nothing to show (Anchorage's "Update to the Aviation Discussion" repeats the rest under
+     .PREV DISCUSSION without its headings); then the newest discussion that has its sections is shown, with its own time */
+  for (const it of ((list && list['@graph']) || []).slice(0, 3)) {
+    const p = await getJSON(`${NWS}/products/${it.id}`, { retries: 1, accept: 'application/ld+json' });
+    const sections = parseAFD(p.productText || '');
+    if (sections.length) return { issued: Date.parse(p.issuanceTime), sections };
+  }
+  return null;
 }
 const AFD_KEEP = /^(KEY MESSAGES|UPDATE|SYNOPSIS|DISCUSSION|SHORT TERM|LONG TERM|NEAR TERM|OVERVIEW)/;
 function parseAFD(text) {
