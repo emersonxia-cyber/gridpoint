@@ -518,7 +518,8 @@ async def check_place(browser, base, place, sem, results):
         # ---- tiles vs the same reading (the same report, not just the same temperature: Phoenix's 5:05 PM report was
         # 82° and 3 mph WSW, its 5:10 PM report 82° and calm)
         shown = exp_now and parse_clock(app['src'], zone, dt.datetime.fromtimestamp(exp_now['t'], zone).date())
-        if exp_now and exp_now['station'] in (app['src'] or '') and shown and abs(shown.timestamp() - exp_now['t']) >= 60:
+        newer_report = bool(exp_now and exp_now['station'] in (app['src'] or '') and shown and abs(shown.timestamp() - exp_now['t']) >= 60)
+        if newer_report:
             res['warn'].append(f"tiles: app shows the {shown:%I:%M %p} report, the newest is {dt.datetime.fromtimestamp(exp_now['t'], zone):%I:%M %p} (a new report landed in between)")
         elif exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
             want = tile_expectations(exp_now)
@@ -575,8 +576,9 @@ async def check_place(browser, base, place, sem, results):
                 else:
                     res['info'].append(f"averages tile: normal {wantN[0]}/{wantN[1]} at {exp_nm['name']} ({exp_nm['dist']:.0f} mi), {big.group(0)} vs normal ✓")
 
-        # ---- metric units: same reading, converted
-        if exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
+        # ---- metric units: same reading, converted (skipped, like the tiles, when a newer report landed in between:
+        # Boston's 8:20 AM report was 48° and 28 km/h, its 8:25 AM report 48° and 24 km/h)
+        if not newer_report and exp_now and exp_now['station'] in (app['src'] or '') and str(jsround(exp_now['tempF'])) in (app['temp'] or ''):
             try:
                 await page.click('[data-units="metric"]')
                 await page.wait_for_timeout(150)
