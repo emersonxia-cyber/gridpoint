@@ -489,7 +489,7 @@ const DEFAULT_PLACES = [
   { id: 'northfield-mn', name: 'Northfield', region: 'MN', lat: 44.4620, lon: -93.1830 },
 ];
 const NWS = 'https://api.weather.gov';
-const APP_BUILD = '2026-11-04 13:53 UTC';
+const APP_BUILD = '2026-11-09 13:57 UTC';
 /* the last few script errors, kept in memory only, so a bug report can include them */
 const recentErrors = [];
 const noteError = msg => { recentErrors.push(String(msg).slice(0, 160)); if (recentErrors.length > 5) recentErrors.shift(); };
@@ -1141,6 +1141,19 @@ async function getIEM(stations) {
   }
   return partial;
 }
+/* The two feeds can settle on different stations: weather.gov's copies of some airports come with the temperature
+   left out (Hilo's), and only airport stations come from the Mesonet (Furnace Creek's nearest is at the visitor center).
+   Then a reading under two hours old beats an older one, one with wind beats one without, and the nearer station
+   beats the farther one, so it's never a station 30 miles away and 6,000 ft up just for being a few minutes newer.
+   For the same station, the newer copy. */
+function pickReading(a, b, stations) {
+  if (!a || !b) return a || b;
+  const t = o => Date.parse(o.obs.timestamp);
+  if (a.station.id === b.station.id) return t(b) > t(a) ? b : a;
+  const rank = o => [Date.now() - t(o) < 2 * HOUR ? 0 : 1, obsHasWind(o.obs) ? 0 : 1, stations.findIndex(s => s.id === o.station.id)];
+  const ra = rank(a), rb = rank(b), k = ra.findIndex((v, i) => v !== rb[i]);
+  return k < 0 || ra[k] < rb[k] ? a : b;
+}
 function iemToObs(d, s) {
   const num = v => (v == null || v === '' || isNaN(+v)) ? null : +v;
   const ktToKmh = v => isNum(num(v)) ? num(v) * 1.852 : null;
@@ -1640,9 +1653,9 @@ function loadPlace(place, { force = false } = {}) {
           .catch(e => { if (prev && Date.now() - prev.t < 12 * HOUR) return prev.j; throw e; });
       const obP = (async () => {
         const stations = await getStations(pt);
-        /* ask weather.gov and the Iowa Mesonet at once and show whichever reading is newer */
+        /* ask weather.gov and the Iowa Mesonet at once: the nearest station's reading, whichever copy is newer */
         const [a, b] = await Promise.all([getObservation(stations).catch(() => null), getIEM(stations).catch(() => null)]);
-        const ob = a && b ? (Date.parse(b.obs.timestamp) > Date.parse(a.obs.timestamp) ? b : a) : a || b;
+        const ob = pickReading(a, b, stations);
         if (!ob) return null;
         let hist = [];
         try { hist = await getObsHistory(ob.station.id); } catch (e) {}

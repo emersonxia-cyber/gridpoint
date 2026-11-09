@@ -114,8 +114,10 @@ def c2f(c):
 
 
 def expected_now(stations):
-    """The app's rule: nearest of the first four stations with a valid temperature and a wind reading
-    (or, if none has wind, the nearest with a temperature); the newer of weather.gov (<3 h old) and the Iowa Mesonet (<2 h old)."""
+    """The app's rule: in each feed (weather.gov, <3 h old; the Iowa Mesonet, <2 h old), the nearest of the first four
+    stations with a valid temperature and a wind reading (or, if none has wind, the nearest with a temperature).
+    For the same station, the newer of the two; for different stations (Hilo's airport has no temperature on weather.gov,
+    Furnace Creek's nearest station isn't on the Mesonet), one under 2 h old, then one with wind, then the nearer."""
     now = time.time()
     nws = nws_partial = None
     for sid in stations[:4]:
@@ -165,7 +167,10 @@ def expected_now(stations):
         pass
     iem = iem or iem_partial
     if nws and iem:
-        return iem if iem['t'] > nws['t'] else nws
+        if nws['station'] == iem['station']:
+            return iem if iem['t'] > nws['t'] else nws
+        rank = lambda o: (now - o['t'] >= 2 * HOUR, o['windMph'] is None, stations.index(o['station']))
+        return nws if rank(nws) <= rank(iem) else iem
     return nws or iem
 
 
